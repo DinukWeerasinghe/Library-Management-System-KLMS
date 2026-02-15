@@ -173,7 +173,7 @@ export function Books({ features = {} }) {
       <style>{`
         .books-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .books-view .view-header h2 { font-size: 1.25rem; }
-        .btn-primary { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
+        .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
         .toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
         .toolbar input { flex: 1; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); color: var(--color-text); }

@@ -62,8 +62,7 @@ export function Dashboard({ session, onLogout }) {
           display: flex;
           flex-direction: column;
           overflow: hidden;
-          background: #f1f5f9; /* Light slate bg for content area overlap if needed, or keep dark */
-          background: var(--color-bg); /* Keeping dark theme consistent */
+          background: var(--background-color); /* Keeping theme consistent */
         }
         
         .content-container {
@@ -84,11 +83,11 @@ export function Dashboard({ session, onLogout }) {
           background: transparent;
         }
         ::-webkit-scrollbar-thumb {
-          background: var(--color-surface-hover);
+          background: var(--sidebar-color);
           border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-          background: var(--color-border);
+          background: var(--overlay-light);
         }
       `}</style>
     </div>

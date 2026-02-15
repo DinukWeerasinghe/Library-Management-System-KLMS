@@ -122,26 +122,26 @@ export function Login({ onSuccess }) {
         }
         
         .login-error {
-          background: rgba(239, 68, 68, 0.1);
+          background: var(--overlay-light);
           color: var(--color-danger);
           padding: 0.75rem;
           border-radius: var(--radius);
           font-size: 0.875rem;
           margin-bottom: 1.25rem;
           text-align: center;
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          border: 1px solid var(--overlay-light);
         }
         
         .btn-primary.full-width {
           width: 100%;
           padding: 0.75rem;
           font-size: 1rem;
-          background: var(--btn-primary-bg);
-          color: var(--header-text);
+          background: var(--button-color);
+          color: var(--header-text-color);
         }
         
         .btn-primary.full-width:hover {
-          background: var(--color-primary-hover);
+          background: var(--button-hover-color);
         }
         
         .login-footer {

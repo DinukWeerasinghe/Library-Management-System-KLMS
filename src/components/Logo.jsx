@@ -29,16 +29,17 @@ export function Logo({ size = 'medium', showText = true }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: branding.schoolLogo ? 'transparent' : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
+                background: branding.schoolLogo ? 'transparent' : 'linear-gradient(135deg, var(--primary-color) 0%, var(--button-hover-color) 100%)',
                 padding: branding.schoolLogo ? '0' : (size === 'small' ? '6px' : '8px'),
                 borderRadius: '8px',
-                boxShadow: branding.schoolLogo ? 'none' : '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
-                overflow: 'hidden'
+                boxShadow: branding.schoolLogo ? 'none' : `0 4px 6px -1px var(--primary-color-light)`,
+                overflow: 'hidden',
+                color: 'var(--header-text-color)'
             }}>
                 {branding.schoolLogo ? (
                     <img src={branding.schoolLogo} alt="Logo" style={{ height: iconSize * 1.5, width: 'auto', objectFit: 'contain' }} />
                 ) : (
-                    <BookOpen size={iconSize} color="white" strokeWidth={2.5} />
+                    <BookOpen size={iconSize} color="currentColor" strokeWidth={2.5} />
                 )}
             </div>
             {showText && (
@@ -47,7 +48,7 @@ export function Logo({ size = 'medium', showText = true }) {
                         fontSize,
                         fontWeight: 700,
                         letterSpacing: '-0.02em',
-                        color: 'var(--color-primary)'
+                        color: 'var(--primary-color)'
                     }}>
                         {branding.schoolName.split(' ')[0] || 'KLMS'}
                     </span>

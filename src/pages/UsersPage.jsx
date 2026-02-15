@@ -127,12 +127,12 @@ export function UsersPage() {
         .data-table { width: 100%; border-collapse: collapse; }
         .data-table th, .data-table td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--color-border); color: var(--color-text); }
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .role-admin { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
-        .role-librarian { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
-        .role-teacher { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-        .btn-primary { background: var(--color-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
-        .btn-danger { background: var(--color-danger); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .role-admin { background: var(--button-color); color: var(--header-text-color); }
+        .role-librarian { background: var(--secondary-color); color: var(--header-text-color); }
+        .role-teacher { background: var(--primary-color); color: var(--header-text-color); }
+        .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+        .btn-danger { background: var(--color-danger); color: var(--header-text-color); border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--overlay-color); display: flex; justify-content: center; align-items: center; z-index: 1000; }
         .modal { background: var(--color-surface); padding: 2rem; border-radius: var(--radius); width: 400px; border: 1px solid var(--color-border); box-shadow: var(--shadow-lg); }
         .modal h3 { margin-top: 0; color: var(--color-text); }
         .form-group { margin-bottom: 1rem; }

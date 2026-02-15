@@ -28,6 +28,20 @@
   /* Gray 900 */
   --btn-primary-bg: var(--color-primary);
   --header-text: #ffffff;
+  
+  /* Compatibility variables for KLMS Dynamic Theme Engine */
+  --primary-color: var(--color-primary);
+  --secondary-color: var(--color-secondary);
+  --sidebar-color: var(--sidebar-bg);
+  --button-color: var(--color-primary);
+  --button-hover-color: var(--color-primary-hover);
+  --background-color: var(--color-bg);
+  --header-text-color: var(--header-text);
+
+  /* helpers used by components for overlays and light primary tints */
+  --overlay-color: rgba(0,0,0,0.7);
+  --overlay-light: rgba(0,0,0,0.1);
+  --primary-color-light: var(--color-primary-light);
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
@@ -118,7 +132,7 @@ button {
 /* Utilities */
 .btn-primary {
   background: var(--btn-primary-bg);
-  color: white;
+  color: var(--header-text-color);
   border: none;
   padding: 0.6rem 1.25rem;
   border-radius: var(--radius);
@@ -138,7 +152,7 @@ button {
 
 .btn-danger {
   background: var(--color-danger);
-  color: white;
+  color: var(--header-text-color);
   padding: 0.5rem 1rem;
   border-radius: var(--radius);
 }

@@ -132,7 +132,7 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
           display: flex;
           align-items: center;
           justify-content: space-between;
-          background: rgba(0,0,0,0.1);
+          background: var(--overlay-light);
         }
         
         .user-profile {
@@ -174,9 +174,9 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
           width: fit-content;
         }
         
-        .role-admin { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-        .role-librarian { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-        .role-teacher { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .role-admin { background: var(--button-color); color: var(--header-text-color); }
+        .role-librarian { background: var(--secondary-color); color: var(--header-text-color); }
+        .role-teacher { background: var(--primary-color); color: var(--header-text-color); }
         
         .logout-btn {
           padding: 0.5rem;
@@ -185,8 +185,8 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
         }
         
         .logout-btn:hover {
-          color: var(--color-danger);
-          background: rgba(239, 68, 68, 0.1);
+          color: var(--button-color);
+          background: var(--overlay-light);
         }
       `}</style>
     </aside>

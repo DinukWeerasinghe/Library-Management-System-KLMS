@@ -327,8 +327,8 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           width: 20px;
           height: 20px;
           border-radius: 50%;
-          background: #fff;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          background: var(--header-text-color);
+          box-shadow: 0 1px 3px var(--overlay-light);
           transition: transform 0.2s;
         }
         .toggle-switch.on .toggle-slider { transform: translateX(20px); }
@@ -342,8 +342,8 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         .branding-item input[type="color"] { height: 40px; padding: 2px; cursor: pointer; }
         .logo-preview-container { display: flex; align-items: center; gap: 1rem; margin-top: 0.25rem; }
         .logo-preview-img { height: 40px; border-radius: 4px; border: 1px solid var(--color-border); }
-        .btn-primary { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; }
-        .btn-primary:hover { background: var(--color-primary-hover); }
+        .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; }
+        .btn-primary:hover { background: var(--button-hover-color); }
       `}</style>
     </div>
   );

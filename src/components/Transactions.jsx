@@ -170,7 +170,7 @@ export function Transactions({ features = {} }) {
         .form-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; }
         .form-row label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.875rem; color: var(--color-text-muted); min-width: 180px; }
         .form-row select { padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-bg); color: var(--color-text); }
-        .btn-primary { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
+        .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
         .muted { color: var(--color-text-muted); font-size: 0.875rem; margin-top: 0.5rem; }
         .msg { margin-bottom: 0.5rem; font-size: 0.875rem; }

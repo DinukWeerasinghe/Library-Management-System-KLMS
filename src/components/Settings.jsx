@@ -187,7 +187,7 @@ export function Settings({ features: propFeatures, onFeaturesChange }) {
         .feature-list { margin-bottom: 1rem; }
         .feature-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; }
         .feature-row input { width: auto; }
-        .btn-primary { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
+        .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
         .msg { margin-top: 0.5rem; font-size: 0.875rem; color: var(--color-text-muted); }
       `}</style>

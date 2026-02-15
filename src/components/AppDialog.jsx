@@ -40,7 +40,7 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         .app-dialog-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: var(--overlay-color);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -75,14 +75,14 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         .app-dialog-ok {
           width: 100%;
           padding: 0.5rem 1rem;
-          background: var(--color-primary);
-          color: #fff;
+          background: var(--button-color);
+          color: var(--header-text-color);
           border: none;
           border-radius: var(--radius);
           font-weight: 600;
           cursor: pointer;
         }
-        .app-dialog-ok:hover { background: var(--color-primary-hover); }
+        .app-dialog-ok:hover { background: var(--button-hover-color); }
       `}</style>
     </div>
   );

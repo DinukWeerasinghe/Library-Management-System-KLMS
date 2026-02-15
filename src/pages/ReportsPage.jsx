@@ -185,14 +185,14 @@ export function ReportsPage({ features = {} }) {
         .reports-toolbar select { padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); color: var(--color-text); min-width: 200px; }
         .reports-toolbar .btn-export {
           padding: 0.5rem 1rem;
-          background: var(--color-primary);
-          color: #fff;
+          background: var(--button-color);
+          color: var(--header-text-color);
           border: none;
           border-radius: var(--radius);
           font-weight: 600;
           cursor: pointer;
         }
-        .reports-toolbar .btn-export:hover:not(:disabled) { background: var(--color-primary-hover); }
+        .reports-toolbar .btn-export:hover:not(:disabled) { background: var(--button-hover-color); }
         .reports-toolbar .btn-export:disabled { opacity: 0.6; cursor: not-allowed; }
         .reports-table-wrap { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1rem; overflow-x: auto; }
         .reports-table-wrap .empty { color: var(--color-text-muted); padding: 0.5rem 0; }

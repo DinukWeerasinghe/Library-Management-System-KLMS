@@ -148,8 +148,8 @@ export function ReturnBookPage({ features = {} }) {
         .issued-table .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
         .issued-table .btn-return {
           padding: 0.35rem 0.65rem;
-          background: var(--color-success);
-          color: #fff;
+          background: var(--button-color);
+          color: var(--header-text-color);
           border: none;
           border-radius: var(--radius);
           font-size: 0.85rem;

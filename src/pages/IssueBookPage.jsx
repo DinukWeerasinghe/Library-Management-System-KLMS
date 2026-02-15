@@ -176,14 +176,14 @@ export function IssueBookPage({ features = {}, config = {} }) {
         .issue-form-card .btn-issue {
           width: 100%;
           padding: 0.65rem;
-          background: var(--color-primary);
-          color: #fff;
+          background: var(--button-color);
+          color: var(--header-text-color);
           border: none;
           border-radius: var(--radius);
           font-weight: 600;
           cursor: pointer;
         }
-        .issue-form-card .btn-issue:hover:not(:disabled) { background: var(--color-primary-hover); }
+        .issue-form-card .btn-issue:hover:not(:disabled) { background: var(--button-hover-color); }
         .issue-form-card .btn-issue:disabled { opacity: 0.6; cursor: not-allowed; }
       `}</style>
     </div>
