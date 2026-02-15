@@ -135,10 +135,10 @@ function registerIpcHandlers() {
   );
 
   // --- Reports ---
-  ipcMain.handle('reports:getReport', async (_, type, memberId) => {
+  ipcMain.handle('reports:getReport', async (_, type, memberId, fromDate, toDate) => {
     const session = authService.getSession();
     if (!session || session.role === 'TEACHER') throw new Error('Unauthorized');
-    return reportService.getReport(type, memberId);
+    return reportService.getReport(type, memberId, fromDate, toDate);
   });
 
   // --- Books ---

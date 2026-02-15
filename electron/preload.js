@@ -56,7 +56,8 @@ contextBridge.exposeInMainWorld('klms', {
   },
   // Reports
   reports: {
-    getReport: (type, memberId) => ipcRenderer.invoke('reports:getReport', type, memberId),
+    getReport: (type, memberId, fromDate, toDate) =>
+      ipcRenderer.invoke('reports:getReport', type, memberId, fromDate, toDate),
   },
   // Backup
   backup: {
