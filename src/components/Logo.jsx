@@ -5,14 +5,30 @@ export function Logo({ size = 'medium', showText = true }) {
     const [branding, setBranding] = useState({ schoolName: 'KLMS', schoolLogo: '' });
 
     useEffect(() => {
-        window.klms.branding.getTheme().then(theme => {
-            if (theme) {
+        // Load initial branding: school name from branding service, logo from config
+        (async () => {
+            try {
+                const theme = await (window.klms.branding && window.klms.branding.getTheme ? window.klms.branding.getTheme() : {});
+                const logo = window.klms.config && window.klms.config.get ? await window.klms.config.get('school_logo') : null;
                 setBranding({
-                    schoolName: theme.schoolName || 'KLMS',
-                    schoolLogo: theme.schoolLogo || ''
+                    schoolName: (theme && theme.schoolName) || 'KLMS',
+                    schoolLogo: logo || (theme && theme.schoolLogo) || ''
                 });
+            } catch (e) {
+                // ignore
             }
-        });
+        })();
+
+        // Listen for runtime branding updates (Settings will dispatch this)
+        const handler = (e) => {
+            const d = e && e.detail ? e.detail : {};
+            setBranding((prev) => ({
+                schoolName: d.schoolName ?? prev.schoolName,
+                schoolLogo: d.schoolLogo ?? prev.schoolLogo,
+            }));
+        };
+        document.addEventListener('klms:branding-updated', handler);
+        return () => document.removeEventListener('klms:branding-updated', handler);
     }, []);
 
     const sizes = {
@@ -37,7 +53,10 @@ export function Logo({ size = 'medium', showText = true }) {
                 color: 'var(--header-text-color)'
             }}>
                 {branding.schoolLogo ? (
-                    <img src={branding.schoolLogo} alt="Logo" style={{ height: iconSize * 1.5, width: 'auto', objectFit: 'contain' }} />
+                    (() => {
+                        const maxH = size === 'large' ? 50 : size === 'medium' ? 40 : 30;
+                        return <img src={branding.schoolLogo} alt="Logo" style={{ maxHeight: maxH, width: 'auto', objectFit: 'contain' }} />;
+                    })()
                 ) : (
                     <BookOpen size={iconSize} color="currentColor" strokeWidth={2.5} />
                 )}

@@ -131,8 +131,16 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       }
       window.klms.log.info('All branding settings sent to main process.');
       showDialog('success', 'Branding settings saved.');
-      // Refresh app theme
-      window.location.reload();
+      // Apply branding without reload: dispatch event so renderer components update live
+      try {
+        const brandingDetail = {
+          schoolLogo: theme.schoolLogo || null,
+          schoolName: theme.schoolName || null,
+        };
+        document.dispatchEvent(new CustomEvent('klms:branding-updated', { detail: brandingDetail }));
+      } catch (e) {
+        // no-op
+      }
     } catch (err) {
       window.klms.log.error(`Branding save FAILED: ${err.message}`);
       showDialog('error', err.message || 'Failed to save branding');
