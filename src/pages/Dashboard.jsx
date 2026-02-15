@@ -45,7 +45,7 @@ export function Dashboard({ session, onLogout }) {
           {tab === 'books' && <Books features={features} />}
           {tab === 'reports' && <ReportsPage features={features} />}
           {tab === 'users' && <UsersPage />}
-          {tab === 'settings' && <SettingsPage features={features} onFeaturesChange={setFeatures} />}
+          {tab === 'settings' && <SettingsPage features={features} onFeaturesChange={setFeatures} session={session} />}
         </div>
       </main>
 

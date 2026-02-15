@@ -1,77 +1,77 @@
 import React from 'react';
 import {
-    BookOpen,
-    Users,
-    Settings,
-    FileText,
-    LogOut,
-    Library,
-    UserCheck,
-    ArrowRightLeft
+  BookOpen,
+  Users,
+  Settings,
+  FileText,
+  LogOut,
+  Library,
+  UserCheck,
+  ArrowRightLeft
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { PermissionService } from '../services/PermissionService';
 
 export function Sidebar({ session, activeTab, onTabChange, onLogout, features }) {
-    const MENU_ITEMS = [
-        { id: 'issue-book', label: 'Issue Book', icon: BookOpen },
-        { id: 'return-book', label: 'Return Book', icon: ArrowRightLeft },
-        { id: 'members', label: 'Members', icon: UserCheck, permission: 'canManageMembers' },
-        { id: 'books', label: 'Books', icon: Library, permission: 'canManageBooks' },
-        { id: 'reports', label: 'Reports', icon: FileText, requireFeature: 'enable_reports', permission: 'canAccessReports' },
-        { id: 'users', label: 'Users', icon: Users, permission: 'canManageUsers' },
-        { id: 'settings', label: 'Settings', icon: Settings, permission: 'canAccessSettings' },
-    ];
+  const MENU_ITEMS = [
+    { id: 'issue-book', label: 'Issue Book', icon: BookOpen },
+    { id: 'return-book', label: 'Return Book', icon: ArrowRightLeft },
+    { id: 'members', label: 'Members', icon: UserCheck, permission: 'canManageMembers' },
+    { id: 'books', label: 'Books', icon: Library, permission: 'canManageBooks' },
+    { id: 'reports', label: 'Reports', icon: FileText, requireFeature: 'enable_reports', permission: 'canAccessReports' },
+    { id: 'users', label: 'Users', icon: Users, permission: 'canManageUsers' },
+    { id: 'settings', label: 'Settings', icon: Settings, permission: 'canAccessSettings' },
+  ];
 
-    const visibleItems = MENU_ITEMS.filter(item => {
-        if (item.requireFeature && !features[item.requireFeature]) return false;
-        if (item.permission && !PermissionService[item.permission](session.role)) return false;
-        return true;
-    });
+  const visibleItems = MENU_ITEMS.filter(item => {
+    if (item.requireFeature && !features[item.requireFeature]) return false;
+    if (item.permission && !PermissionService[item.permission](session.role)) return false;
+    return true;
+  });
 
-    return (
-        <aside className="sidebar">
-            <div className="sidebar-header">
-                <Logo size="medium" />
-            </div>
+  return (
+    <aside className="sidebar">
+      <div className="sidebar-header">
+        <Logo size="medium" />
+      </div>
 
-            <nav className="sidebar-nav">
-                {visibleItems.map(item => {
-                    const Icon = item.icon;
-                    const isActive = activeTab === item.id;
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => onTabChange(item.id)}
-                            className={`nav-item ${isActive ? 'active' : ''}`}
-                        >
-                            <Icon size={20} />
-                            <span>{item.label}</span>
-                            {isActive && <div className="active-indicator" />}
-                        </button>
-                    );
-                })}
-            </nav>
+      <nav className="sidebar-nav">
+        {visibleItems.map(item => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              className={`nav-item ${isActive ? 'active' : ''}`}
+            >
+              <Icon size={20} />
+              <span>{item.label}</span>
+              {isActive && <div className="active-indicator" />}
+            </button>
+          );
+        })}
+      </nav>
 
-            <div className="sidebar-footer">
-                <div className="user-profile">
-                    <div className="avatar">
-                        {session.username[0].toUpperCase()}
-                    </div>
-                    <div className="user-info">
-                        <span className="name">{session.username}</span>
-                        <span className={`role role-${session.role.toLowerCase()}`}>{session.role}</span>
-                    </div>
-                </div>
-                <button onClick={onLogout} className="logout-btn" title="Logout">
-                    <LogOut size={20} />
-                </button>
-            </div>
+      <div className="sidebar-footer">
+        <div className="user-profile">
+          <div className="avatar">
+            {session.username[0].toUpperCase()}
+          </div>
+          <div className="user-info">
+            <span className="name">{session.username}</span>
+            <span className={`role role-${session.role.toLowerCase()}`}>{session.role}</span>
+          </div>
+        </div>
+        <button onClick={onLogout} className="logout-btn" title="Logout">
+          <LogOut size={20} />
+        </button>
+      </div>
 
-            <style>{`
+      <style>{`
         .sidebar {
           width: 260px;
-          background: var(--color-surface);
+          background: var(--sidebar-bg);
           border-right: 1px solid var(--color-border);
           display: flex;
           flex-direction: column;
@@ -111,7 +111,7 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
         }
         
         .nav-item.active {
-          background: rgba(59, 130, 246, 0.1);
+          background: var(--color-primary-light);
           color: var(--color-primary);
         }
         
@@ -189,6 +189,6 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
           background: rgba(239, 68, 68, 0.1);
         }
       `}</style>
-        </aside>
-    );
+    </aside>
+  );
 }

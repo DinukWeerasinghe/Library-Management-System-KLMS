@@ -71,7 +71,7 @@ export function Login({ onSuccess }) {
       </div>
 
       <div className="login-footer">
-        <p>© {new Date().getFullYear()} Kumaradasa Library Management System</p>
+        <p>© {new Date().getFullYear()} KLMS - Library Management System</p>
       </div>
 
       <style>{`
@@ -136,6 +136,12 @@ export function Login({ onSuccess }) {
           width: 100%;
           padding: 0.75rem;
           font-size: 1rem;
+          background: var(--btn-primary-bg);
+          color: var(--header-text);
+        }
+        
+        .btn-primary.full-width:hover {
+          background: var(--color-primary-hover);
         }
         
         .login-footer {

@@ -11,9 +11,10 @@ const featureToggleRepo = require('./database/feature-toggle-repository');
 const memberService = require('./services/member-service');
 const bookService = require('./services/book-service');
 const categoryService = require('./services/category-service');
-const issueService = require('./services/issue-service');
 const reportService = require('./services/report-service');
 const userService = require('./services/user-service');
+const themeService = require('./services/ThemeService');
+const logger = require('./logger');
 
 function registerIpcHandlers() {
   // ensureDatabaseExists() is awaited in main.js before this runs
@@ -55,7 +56,26 @@ function registerIpcHandlers() {
   ipcMain.handle('config:set', async (_, key, value) => {
     const session = authService.getSession();
     if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
-    return configService.set(key, value);
+    logger.info(`Setting config: ${key} = ${value}`);
+    try {
+      const result = await configService.set(key, value);
+      logger.info(`Successfully set config: ${key}`);
+      return result;
+    } catch (err) {
+      logger.error(`Failed to set config: ${key}`, err);
+      throw err;
+    }
+  });
+
+  // --- Theme ---
+  ipcMain.handle('theme:getTheme', async () => themeService.getTheme());
+
+  // --- Logging (from renderer) ---
+  ipcMain.handle('log:info', async (_, message) => {
+    logger.info(`[Renderer] ${message}`);
+  });
+  ipcMain.handle('log:error', async (_, message) => {
+    logger.error(`[Renderer] ${message}`);
   });
 
   // --- Feature toggles ---

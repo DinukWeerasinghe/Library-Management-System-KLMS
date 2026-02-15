@@ -63,4 +63,13 @@ contextBridge.exposeInMainWorld('klms', {
     delete: (id) => ipcRenderer.invoke('users:delete', id),
     resetPassword: (id, newPassword) => ipcRenderer.invoke('users:resetPassword', id, newPassword),
   },
+  // Branding & Theme
+  branding: {
+    getTheme: () => ipcRenderer.invoke('theme:getTheme'),
+  },
+  // Logging
+  log: {
+    info: (msg) => ipcRenderer.invoke('log:info', msg),
+    error: (msg) => ipcRenderer.invoke('log:error', msg),
+  },
 });

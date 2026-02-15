@@ -13,6 +13,19 @@ export default function App() {
         setSession(s);
         setLoading(false);
       }).catch(() => setLoading(false));
+
+      // Load theme
+      window.klms.branding.getTheme().then(theme => {
+        const root = document.documentElement;
+        if (theme.primaryColor) {
+          root.style.setProperty('--color-primary', theme.primaryColor);
+          root.style.setProperty('--color-primary-hover', theme.buttonHoverColor || theme.primaryColor);
+        }
+        if (theme.sidebarColor) root.style.setProperty('--sidebar-bg', theme.sidebarColor);
+        if (theme.backgroundColor) root.style.setProperty('--color-bg', theme.backgroundColor);
+        if (theme.buttonColor) root.style.setProperty('--btn-primary-bg', theme.buttonColor);
+        if (theme.headerTextColor) root.style.setProperty('--header-text', theme.headerTextColor);
+      });
     } else {
       setLoading(false);
     }

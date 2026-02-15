@@ -1,7 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen } from 'lucide-react';
 
 export function Logo({ size = 'medium', showText = true }) {
+    const [branding, setBranding] = useState({ schoolName: 'KLMS', schoolLogo: '' });
+
+    useEffect(() => {
+        window.klms.branding.getTheme().then(theme => {
+            if (theme) {
+                setBranding({
+                    schoolName: theme.schoolName || 'KLMS',
+                    schoolLogo: theme.schoolLogo || ''
+                });
+            }
+        });
+    }, []);
+
     const sizes = {
         small: { icon: 20, text: '1rem', gap: '0.5rem' },
         medium: { icon: 28, text: '1.5rem', gap: '0.75rem' },
@@ -16,12 +29,17 @@ export function Logo({ size = 'medium', showText = true }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
-                padding: size === 'small' ? '6px' : '8px',
+                background: branding.schoolLogo ? 'transparent' : 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
+                padding: branding.schoolLogo ? '0' : (size === 'small' ? '6px' : '8px'),
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.3)'
+                boxShadow: branding.schoolLogo ? 'none' : '0 4px 6px -1px rgba(59, 130, 246, 0.3)',
+                overflow: 'hidden'
             }}>
-                <BookOpen size={iconSize} color="white" strokeWidth={2.5} />
+                {branding.schoolLogo ? (
+                    <img src={branding.schoolLogo} alt="Logo" style={{ height: iconSize * 1.5, width: 'auto', objectFit: 'contain' }} />
+                ) : (
+                    <BookOpen size={iconSize} color="white" strokeWidth={2.5} />
+                )}
             </div>
             {showText && (
                 <div className="logo-text" style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
@@ -29,9 +47,9 @@ export function Logo({ size = 'medium', showText = true }) {
                         fontSize,
                         fontWeight: 700,
                         letterSpacing: '-0.02em',
-                        color: 'var(--color-primary)' // Make KLMS pop with primary color
+                        color: 'var(--color-primary)'
                     }}>
-                        KLMS
+                        {branding.schoolName.split(' ')[0] || 'KLMS'}
                     </span>
                     {size !== 'small' && (
                         <span style={{
@@ -42,7 +60,7 @@ export function Logo({ size = 'medium', showText = true }) {
                             letterSpacing: '0.05em',
                             textTransform: 'uppercase'
                         }}>
-                            Kumaradasa Library
+                            {branding.schoolName.split(' ').slice(1).join(' ') || 'Library System'}
                         </span>
                     )}
                 </div>

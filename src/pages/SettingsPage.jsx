@@ -17,12 +17,26 @@ const CONFIG_KEYS = [
   { key: 'grace_period', label: 'Grace period (days)' },
 ];
 
-export function SettingsPage({ features: propFeatures, onFeaturesChange }) {
+const BRANDING_KEYS = [
+  { key: 'primary_color', label: 'Primary Color', type: 'color' },
+  { key: 'secondary_color', label: 'Secondary Color', type: 'color' },
+  { key: 'sidebar_color', label: 'Sidebar Color', type: 'color' },
+  { key: 'button_color', label: 'Button Color', type: 'color' },
+  { key: 'button_hover_color', label: 'Button Hover Color', type: 'color' },
+  { key: 'header_text_color', label: 'Header Text Color', type: 'color' },
+  { key: 'background_color', label: 'Background Color', type: 'color' },
+  { key: 'school_name', label: 'School Name', type: 'text' },
+];
+
+export function SettingsPage({ features: propFeatures, onFeaturesChange, session }) {
   const [config, setConfig] = useState({});
   const [features, setFeatures] = useState(propFeatures || {});
+  const [theme, setTheme] = useState({});
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+
+  const isAdmin = session?.role === 'ADMIN';
 
   const showDialog = (type, message) => setDialog({ open: true, type, message });
   const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
@@ -35,15 +49,30 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange }) {
     Promise.all([
       window.klms.config.getAll(),
       window.klms.features.getAll(),
+      window.klms.branding.getTheme(),
     ])
-      .then(([c, f]) => {
+      .then(([c, f, t]) => {
         setConfig(c || {});
         setFeatures(f || {});
+        setTheme(t || {});
         if (onFeaturesChange) onFeaturesChange(f);
       })
       .catch(() => showDialog('error', 'Failed to load settings'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Apply theme preview
+  useEffect(() => {
+    if (!theme) return;
+    const root = document.documentElement;
+    if (theme.primaryColor) root.style.setProperty('--color-primary', theme.primaryColor);
+    if (theme.secondaryColor) root.style.setProperty('--color-secondary', theme.secondaryColor);
+    if (theme.sidebarColor) root.style.setProperty('--sidebar-bg', theme.sidebarColor);
+    if (theme.buttonColor) root.style.setProperty('--btn-bg', theme.buttonColor);
+    if (theme.buttonHoverColor) root.style.setProperty('--btn-hover', theme.buttonHoverColor);
+    if (theme.headerTextColor) root.style.setProperty('--header-text', theme.headerTextColor);
+    if (theme.backgroundColor) root.style.setProperty('--color-bg', theme.backgroundColor);
+  }, [theme]);
 
   const handleToggle = async (key, enabled) => {
     const next = { ...features, [key]: enabled };
@@ -73,6 +102,51 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange }) {
     } catch (err) {
       showDialog('error', err.message || 'Failed to save configuration');
     }
+  };
+
+  const handleThemeChange = (key, value) => {
+    setTheme(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveBranding = async () => {
+    window.klms.log.info('Starting branding save...');
+    try {
+      const keysMap = {
+        primaryColor: 'primary_color',
+        secondaryColor: 'secondary_color',
+        sidebarColor: 'sidebar_color',
+        buttonColor: 'button_color',
+        buttonHoverColor: 'button_hover_color',
+        headerTextColor: 'header_text_color',
+        backgroundColor: 'background_color',
+        schoolName: 'school_name',
+        schoolLogo: 'school_logo'
+      };
+
+      for (const [camel, snake] of Object.entries(keysMap)) {
+        if (theme[camel] !== undefined) {
+          window.klms.log.info(`Saving branding config: ${snake} = ${theme[camel] ? (theme[camel].length > 50 ? theme[camel].substring(0, 50) + '...' : theme[camel]) : 'null'}`);
+          await window.klms.config.set(snake, theme[camel]);
+        }
+      }
+      window.klms.log.info('All branding settings sent to main process.');
+      showDialog('success', 'Branding settings saved.');
+      // Refresh app theme
+      window.location.reload();
+    } catch (err) {
+      window.klms.log.error(`Branding save FAILED: ${err.message}`);
+      showDialog('error', err.message || 'Failed to save branding');
+    }
+  };
+
+  const handleLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      handleThemeChange('schoolLogo', event.target.result);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleChangePassword = async () => {
@@ -162,6 +236,44 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange }) {
         </button>
       </section>
 
+      {/* Branding (Admin Only) */}
+      {isAdmin && (
+        <section className="settings-section">
+          <h3>System Branding</h3>
+          <p className="muted">Customize the look and feel of your library system.</p>
+
+          <div className="branding-grid">
+            {BRANDING_KEYS.map(({ key, label, type }) => {
+              const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+              return (
+                <div key={key} className="branding-item">
+                  <label>{label}</label>
+                  <input
+                    type={type}
+                    value={theme[camelKey] || ''}
+                    onChange={(e) => handleThemeChange(camelKey, e.target.value)}
+                  />
+                </div>
+              );
+            })}
+
+            <div className="branding-item">
+              <label>School Logo</label>
+              <div className="logo-preview-container">
+                {theme.schoolLogo && (
+                  <img src={theme.schoolLogo} alt="Logo Preview" className="logo-preview-img" />
+                )}
+                <input type="file" accept="image/*" onChange={handleLogoUpload} />
+              </div>
+            </div>
+          </div>
+
+          <button type="button" className="btn-primary" onClick={handleSaveBranding}>
+            Save branding
+          </button>
+        </section>
+      )}
+
       {/* Change password */}
       <section className="settings-section">
         <h3>Change password</h3>
@@ -224,6 +336,12 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange }) {
         .config-grid label { display: block; font-size: 0.875rem; color: var(--color-text-muted); }
         .config-grid input { width: 100%; margin-top: 0.25rem; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-bg); color: var(--color-text); }
         .config-grid input[type="number"] { min-width: 0; }
+        .branding-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .branding-item label { display: block; font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: 0.25rem; }
+        .branding-item input { width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-bg); color: var(--color-text); }
+        .branding-item input[type="color"] { height: 40px; padding: 2px; cursor: pointer; }
+        .logo-preview-container { display: flex; align-items: center; gap: 1rem; margin-top: 0.25rem; }
+        .logo-preview-img { height: 40px; border-radius: 4px; border: 1px solid var(--color-border); }
         .btn-primary { background: var(--color-primary); color: #fff; border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; }
         .btn-primary:hover { background: var(--color-primary-hover); }
       `}</style>
