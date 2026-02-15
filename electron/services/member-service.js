@@ -1,0 +1,110 @@
+/**
+ * Member CRUD Service
+ * Add, update, delete, search members. Member types: Student, Teacher.
+ */
+const { getDatabase } = require('../database/connection');
+
+const MEMBER_TYPES = ['Student', 'Teacher'];
+
+function getAll(filters = {}) {
+  const db = getDatabase();
+  let sql = 'SELECT m.* FROM Member m WHERE 1=1';
+  const params = [];
+  if (filters.memberType) {
+    sql += ' AND m.member_type = ?';
+    params.push(filters.memberType);
+  }
+  sql += ' ORDER BY m.name';
+  return db.prepare(sql).all(...params);
+}
+
+function getById(id) {
+  const db = getDatabase();
+  return db.prepare('SELECT * FROM Member WHERE id = ?').get(id);
+}
+
+function create(data) {
+  const db = getDatabase();
+  const { member_type, name, email, phone, address, member_id } = data;
+  if (!MEMBER_TYPES.includes(member_type)) {
+    throw new Error('Invalid member_type. Must be Student or Teacher.');
+  }
+  const stmt = db.prepare(`
+    INSERT INTO Member (member_type, name, email, phone, address, member_id)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    member_type,
+    name || '',
+    email || null,
+    phone || null,
+    address || null,
+    member_id || null
+  );
+  return getById(result.lastInsertRowid);
+}
+
+function update(id, data) {
+  const db = getDatabase();
+  const existing = getById(id);
+  if (!existing) throw new Error('Member not found');
+  const { member_type, name, email, phone, address, member_id } = data;
+  if (member_type && !MEMBER_TYPES.includes(member_type)) {
+    throw new Error('Invalid member_type. Must be Student or Teacher.');
+  }
+  db.prepare(`
+    UPDATE Member SET
+      member_type = COALESCE(?, member_type),
+      name = COALESCE(?, name),
+      email = ?,
+      phone = ?,
+      address = ?,
+      member_id = ?,
+      updated_at = datetime('now')
+    WHERE id = ?
+  `).run(
+    member_type ?? existing.member_type,
+    name ?? existing.name,
+    email !== undefined ? email : existing.email,
+    phone !== undefined ? phone : existing.phone,
+    address !== undefined ? address : existing.address,
+    member_id !== undefined ? member_id : existing.member_id,
+    id
+  );
+  return getById(id);
+}
+
+function deleteMember(id) {
+  const db = getDatabase();
+  const existing = getById(id);
+  if (!existing) throw new Error('Member not found');
+  const issues = db.prepare('SELECT id FROM Issue WHERE member_id = ? AND return_date IS NULL').all(id);
+  if (issues.length > 0) {
+    throw new Error('Cannot delete member with active book issues. Return books first.');
+  }
+  db.prepare('DELETE FROM Member WHERE id = ?').run(id);
+  return { deleted: true, id };
+}
+
+function search(query) {
+  if (!query || typeof query !== 'string' || query.trim() === '') {
+    return getAll({});
+  }
+  const db = getDatabase();
+  const term = `%${query.trim()}%`;
+  return db.prepare(`
+    SELECT * FROM Member
+    WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_id LIKE ?
+    ORDER BY name
+  `).all(term, term, term, term);
+}
+
+module.exports = {
+  getAll,
+  getById,
+  create,
+  update,
+  delete: deleteMember,
+  search,
+  MEMBER_TYPES,
+};
