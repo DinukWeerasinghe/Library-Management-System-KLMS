@@ -11,6 +11,7 @@ const featureToggleRepo = require('./database/feature-toggle-repository');
 const memberService = require('./services/member-service');
 const bookService = require('./services/book-service');
 const categoryService = require('./services/category-service');
+const issueService = require('./services/issue-service');
 const reportService = require('./services/report-service');
 const userService = require('./services/user-service');
 const themeService = require('./services/ThemeService');
