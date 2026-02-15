@@ -121,6 +121,30 @@ function returnBook(issueId) {
 }
 
 /**
+ * Return a book using any code (ISBN, external, or internal).
+ * @param {string} scannedCode
+ * @returns {object} Updated issue
+ */
+function returnBookByAnyCode(scannedCode) {
+  const db = getDatabase();
+
+  // 1. Find book
+  const book = bookService.getBookByAnyCode(scannedCode);
+  if (!book) throw new Error('Book not found with the scanned code');
+
+  // 2. Find active issue
+  const issue = db.prepare(`
+    SELECT id FROM Issue 
+    WHERE book_id = ? AND status = 'ISSUED'
+  `).get(book.id);
+
+  if (!issue) throw new Error(`The book "${book.title}" is not currently issued`);
+
+  // 3. Process return
+  return returnBook(issue.id);
+}
+
+/**
  * Renew an issue (extend due date by max_borrow_days).
  * @param {number} issueId
  * @returns {object} Updated issue
@@ -190,6 +214,7 @@ function getOverdue() {
 module.exports = {
   issueBook,
   returnBook,
+  returnBookByAnyCode,
   renewBook,
   getIssueById,
   getAll,

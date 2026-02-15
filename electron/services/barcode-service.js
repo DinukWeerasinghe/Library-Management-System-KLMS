@@ -9,10 +9,10 @@ const logger = require('../logger');
  * @param {string} memberCode 
  * @returns {Promise<string>} The relative path to the saved barcode image.
  */
-async function generateBarcode(memberCode) {
+async function generateBarcode(code, subfolder = 'member-codes') {
     return new Promise((resolve, reject) => {
         const userDataPath = app.getPath('userData');
-        const assetsDir = path.join(userDataPath, 'assets', 'member-codes');
+        const assetsDir = path.join(userDataPath, 'assets', subfolder);
 
         // Ensure directory exists
         if (!fs.existsSync(assetsDir)) {

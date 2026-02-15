@@ -13,6 +13,8 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const [selectedBookId, setSelectedBookId] = useState('');
   const [scanMemberCode, setScanMemberCode] = useState('');
   const [scannedMember, setScannedMember] = useState(null);
+  const [scanBookCode, setScanBookCode] = useState('');
+  const [scannedBook, setScannedBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
@@ -70,6 +72,43 @@ export function IssueBookPage({ features = {}, config = {} }) {
     }
   };
 
+  const handleScanBook = async (code) => {
+    setScanBookCode(code);
+    if (code.length >= 4) { // Minimally search codes like ISBN or internal BK...
+      try {
+        const book = await window.klms.books.getByAnyCode(code);
+        if (book) {
+          if (book.available_copies > 0) {
+            setScannedBook(book);
+            setSelectedBookId(book.id.toString());
+          } else {
+            console.warn('Book found but no copies available');
+            setScannedBook(null); // Or show a specific error
+          }
+        } else {
+          setScannedBook(null);
+        }
+      } catch (err) {
+        console.error('Book scan failed:', err);
+      }
+    } else if (code === '') {
+      setScannedBook(null);
+      setSelectedBookId('');
+    }
+  };
+
+  const handleManualBookChange = (id) => {
+    setSelectedBookId(id);
+    if (!id) {
+      setScannedBook(null);
+      setScanBookCode('');
+    } else {
+      const book = books.find(b => b.id.toString() === id.toString());
+      setScannedBook(book || null);
+      if (book) setScanBookCode(book.external_code || book.isbn || book.internal_code || '');
+    }
+  };
+
   const availableBooks = books.filter((b) => b.available_copies > 0);
   const maxBorrowDays = parseInt(config.max_borrow_days, 10) || 14;
   const maxBooksPerMember = parseInt(config.max_books_per_member, 10) || 3;
@@ -92,6 +131,8 @@ export function IssueBookPage({ features = {}, config = {} }) {
       setScanMemberCode('');
       setScannedMember(null);
       setSelectedBookId('');
+      setScanBookCode('');
+      setScannedBook(null);
       loadData();
     } catch (err) {
       const msg = err.message || 'Issue failed';
@@ -156,16 +197,35 @@ export function IssueBookPage({ features = {}, config = {} }) {
         </div>
 
         <div className="form-group">
-          <label>Book (available copies only)</label>
+          <label>Book Selection</label>
+          <div className="scan-input-wrapper" style={{ marginBottom: '1rem' }}>
+            <label style={{ fontSize: '0.75rem', marginBottom: '0.2rem' }}>Scan ISBN / KLMS Barcode</label>
+            <input
+              type="text"
+              placeholder="Scan book barcode..."
+              value={scanBookCode}
+              onChange={(e) => handleScanBook(e.target.value)}
+              className="scan-input"
+            />
+            {scannedBook && (
+              <div className="scanned-badge" style={{ borderLeftColor: 'var(--button-color)' }}>
+                <span className="scanned-name">{scannedBook.title}</span>
+                <span className="scanned-type" style={{ color: 'var(--button-color)', background: 'rgba(var(--button-color-rgb), 0.1)' }}>
+                  {scannedBook.available_copies} Available
+                </span>
+              </div>
+            )}
+          </div>
+
           <select
             value={selectedBookId}
-            onChange={(e) => setSelectedBookId(e.target.value)}
+            onChange={(e) => handleManualBookChange(e.target.value)}
             disabled={submitting}
           >
-            <option value="">Select book</option>
+            <option value="">Or select book manually</option>
             {availableBooks.map((b) => (
               <option key={b.id} value={b.id}>
-                {b.title} {b.author ? `– ${b.author}` : ''} ({b.available_copies} available)
+                {b.title} ({b.author || 'No Author'})
               </option>
             ))}
           </select>

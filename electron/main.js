@@ -130,8 +130,10 @@ app.whenReady().then(async () => {
   try {
     const { runMemberCodeMigration } = require('./database/migrate-member-code');
     const { runMemberBarcodeMigration } = require('./database/migrate-member-barcode');
+    const { runBookHybridIdMigration } = require('./database/migrate-book-barcode');
     runMemberCodeMigration();
     runMemberBarcodeMigration();
+    runBookHybridIdMigration();
 
     registerIpcHandlers();
     logger.info('IPC handlers registered.');

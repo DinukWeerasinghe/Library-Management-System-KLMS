@@ -5,9 +5,10 @@ export function Books({ features = {} }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1 });
+  const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
   const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
+  const [viewingBarcode, setViewingBarcode] = useState(null);
   const showCategories = features.enable_categories;
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export function Books({ features = {} }) {
 
   const openCreate = () => {
     setEditing('new');
-    setForm({ title: '', author: '', isbn: '', category_id: '', total_copies: 1 });
+    setForm({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
     setError('');
   };
 
@@ -54,6 +55,7 @@ export function Books({ features = {} }) {
       isbn: b.isbn || '',
       category_id: b.category_id || '',
       total_copies: b.total_copies ?? 1,
+      external_code: b.external_code || '',
     });
     setError('');
   };
@@ -73,6 +75,7 @@ export function Books({ features = {} }) {
       title: form.title.trim(),
       author: form.author.trim() || null,
       isbn: form.isbn.trim() || null,
+      external_code: form.external_code.trim() || null,
       total_copies: Math.max(1, parseInt(form.total_copies, 10) || 1),
     };
     if (showCategories && form.category_id) payload.category_id = parseInt(form.category_id, 10) || null;
@@ -100,6 +103,29 @@ export function Books({ features = {} }) {
     }
   };
 
+  const showBarcode = async (b) => {
+    try {
+      const img = await window.klms.books.getBarcodeImage(b.id);
+      if (img) {
+        setViewingBarcode({ id: b.id, code: b.internal_code, image: img });
+      } else {
+        alert('Internal barcode not found for this book.');
+      }
+    } catch (err) {
+      console.error('Failed to load barcode:', err);
+    }
+  };
+
+  const regenerateBarcode = async (b) => {
+    try {
+      alert('Generating internal barcode...');
+      await window.klms.books.update(b.id, { title: b.title }); // Saving triggers generation if missing
+      loadBooks();
+    } catch (err) {
+      alert('Failed to generate barcode');
+    }
+  };
+
   return (
     <div className="books-view">
       <div className="view-header">
@@ -121,16 +147,17 @@ export function Books({ features = {} }) {
         <div className="form-card">
           <h3>{editing === 'new' ? 'New Book' : 'Edit Book'}</h3>
           <div className="form-grid">
-            <label>Title * <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></label>
-            <label>Author <input value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} /></label>
-            <label>ISBN <input value={form.isbn} onChange={(e) => setForm({ ...form, isbn: e.target.value })} /></label>
+            <label>Title * <input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} /></label>
+            <label>Author <input value={form.author} onChange={(e) => setForm(prev => ({ ...prev, author: e.target.value }))} /></label>
+            <label>ISBN <input value={form.isbn} onChange={(e) => setForm(prev => ({ ...prev, isbn: e.target.value }))} /></label>
+            <label>Publisher Barcode <input value={form.external_code} onChange={(e) => setForm(prev => ({ ...prev, external_code: e.target.value }))} placeholder="Scan ISBN/Pub code" /></label>
             {showCategories && (
-              <label>Category <select value={form.category_id} onChange={(e) => setForm({ ...form, category_id: e.target.value })}>
+              <label>Category <select value={form.category_id} onChange={(e) => setForm(prev => ({ ...prev, category_id: e.target.value }))}>
                 <option value="">None</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select></label>
             )}
-            <label>Total copies <input type="number" min={1} value={form.total_copies} onChange={(e) => setForm({ ...form, total_copies: e.target.value })} /></label>
+            <label>Total copies <input type="number" min={1} value={form.total_copies} onChange={(e) => setForm(prev => ({ ...prev, total_copies: e.target.value }))} /></label>
           </div>
           <div className="form-actions">
             <button type="button" onClick={closeForm}>Cancel</button>
@@ -145,9 +172,10 @@ export function Books({ features = {} }) {
               <tr>
                 <th>Title</th>
                 <th>Author</th>
-                <th>ISBN</th>
+                <th>ID Codes</th>
+                <th>Internal Barcode</th>
                 {showCategories && <th>Category</th>}
-                <th>Available / Total</th>
+                <th>Available</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -156,7 +184,18 @@ export function Books({ features = {} }) {
                 <tr key={b.id}>
                   <td>{b.title}</td>
                   <td>{b.author || '–'}</td>
-                  <td>{b.isbn || '–'}</td>
+                  <td>
+                    <div style={{ fontSize: '0.8rem' }}>
+                      {b.isbn && <div>ISBN: {b.isbn}</div>}
+                      {b.external_code && <div>EXT: {b.external_code}</div>}
+                      {b.internal_code && <div>INT: {b.internal_code}</div>}
+                    </div>
+                  </td>
+                  <td>
+                    {b.barcode_path ? (
+                      <button type="button" className="btn-sm" onClick={() => showBarcode(b)}>View</button>
+                    ) : (b.internal_code ? <button type="button" className="btn-sm" onClick={() => regenerateBarcode(b)}>Generate</button> : '–')}
+                  </td>
                   {showCategories && <td>{b.category_name || '–'}</td>}
                   <td>{b.available_copies} / {b.total_copies}</td>
                   <td>
@@ -170,7 +209,35 @@ export function Books({ features = {} }) {
         )}
         {!loading && list.length === 0 && <p className="muted">No books found.</p>}
       </div>
+
+      {viewingBarcode && (
+        <div className="barcode-modal-overlay" onClick={() => setViewingBarcode(null)}>
+          <div className="barcode-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>KLMS Book Barcode</h3>
+              <button className="close-btn" onClick={() => setViewingBarcode(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="barcode-id">{viewingBarcode.code}</div>
+              <img src={viewingBarcode.image} alt="Barcode" className="barcode-img" />
+              <p className="barcode-hint">Use this for internal inventory and scanning</p>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => window.print()} className="btn-primary">Print Barcode</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
+        .barcode-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .barcode-modal { background: white; padding: 2rem; border-radius: var(--radius); max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #333; }
+        .barcode-modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid #eee; padding-bottom: 0.5rem; }
+        .barcode-modal .close-btn { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; }
+        .barcode-id { font-weight: bold; font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
+        .barcode-img { max-width: 100%; height: auto; border: 1px solid #eee; padding: 1rem; background: white; margin-bottom: 1rem; }
+        .barcode-hint { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+
         .books-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .books-view .view-header h2 { font-size: 1.25rem; }
         .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }

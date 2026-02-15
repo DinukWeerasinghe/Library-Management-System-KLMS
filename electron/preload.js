@@ -39,6 +39,7 @@ contextBridge.exposeInMainWorld('klms', {
     issueBook: (memberId, bookId) => ipcRenderer.invoke('issues:issueBook', memberId, bookId),
     returnBook: (issueId) => ipcRenderer.invoke('issues:returnBook', issueId),
     renewBook: (issueId) => ipcRenderer.invoke('issues:renewBook', issueId),
+    returnBookByAnyCode: (code) => ipcRenderer.invoke('issues:returnBookByAnyCode', code),
     getById: (id) => ipcRenderer.invoke('issues:getById', id),
     getAll: (filters) => ipcRenderer.invoke('issues:getAll', filters),
   },
@@ -50,6 +51,8 @@ contextBridge.exposeInMainWorld('klms', {
     update: (id, data) => ipcRenderer.invoke('books:update', id, data),
     delete: (id) => ipcRenderer.invoke('books:delete', id),
     search: (query) => ipcRenderer.invoke('books:search', query),
+    getByAnyCode: (code) => ipcRenderer.invoke('books:getByAnyCode', code),
+    getBarcodeImage: (id) => ipcRenderer.invoke('books:getBarcodeImage', id),
   },
   // Reports
   reports: {

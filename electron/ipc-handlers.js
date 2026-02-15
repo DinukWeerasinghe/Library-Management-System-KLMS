@@ -126,9 +126,9 @@ function registerIpcHandlers() {
   ipcMain.handle('issues:returnBook', async (_, issueId) =>
     issueService.returnBook(issueId)
   );
-  ipcMain.handle('issues:renewBook', async (_, issueId) =>
-    issueService.renewBook(issueId)
-  );
+  ipcMain.handle('issues:renewBook', async (_, id) => issueService.renewBook(id));
+  ipcMain.handle('issues:returnBookByAnyCode', async (_, code) => issueService.returnBookByAnyCode(code));
+  ipcMain.handle('issues:getOverdue', async () => issueService.getOverdue());
   ipcMain.handle('issues:getById', async (_, id) => issueService.getIssueById(id));
   ipcMain.handle('issues:getAll', async (_, filters) =>
     issueService.getAll(filters || {})
@@ -152,6 +152,15 @@ function registerIpcHandlers() {
   ipcMain.handle('books:update', async (_, id, data) => bookService.update(id, data));
   ipcMain.handle('books:delete', async (_, id) => bookService.delete(id));
   ipcMain.handle('books:search', async (_, query) => bookService.search(query));
+  ipcMain.handle('books:getByAnyCode', async (_, code) => bookService.getBookByAnyCode(code));
+  ipcMain.handle('books:getBarcodeImage', async (_, id) => {
+    const book = await bookService.getById(id);
+    if (book && book.barcode_path && fs.existsSync(book.barcode_path)) {
+      const buffer = fs.readFileSync(book.barcode_path);
+      return `data:image/png;base64,${buffer.toString('base64')}`;
+    }
+    return null;
+  });
 
   // --- Backup: export DB file ---
   ipcMain.handle('backup:exportDb', async () => {
