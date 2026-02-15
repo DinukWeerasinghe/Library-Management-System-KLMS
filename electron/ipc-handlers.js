@@ -105,8 +105,16 @@ function registerIpcHandlers() {
     if (!session || (session.role !== 'ADMIN' && session.role !== 'LIBRARIAN')) throw new Error('Unauthorized');
     return memberService.delete(id);
   });
-  ipcMain.handle('members:search', async (_, query) => memberService.search(query));
   ipcMain.handle('members:generateCode', async () => memberService.generateMemberCode());
+  ipcMain.handle('members:getByCode', async (_, code) => memberService.getByCode(code));
+  ipcMain.handle('members:getBarcodeImage', async (_, id) => {
+    const member = await memberService.getById(id);
+    if (member && member.barcode_path && fs.existsSync(member.barcode_path)) {
+      const buffer = fs.readFileSync(member.barcode_path);
+      return `data:image/png;base64,${buffer.toString('base64')}`;
+    }
+    return null;
+  });
 
   // --- Categories ---
   ipcMain.handle('categories:getAll', async () => categoryService.getAll());

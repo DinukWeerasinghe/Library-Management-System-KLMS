@@ -3,6 +3,8 @@
  * Add, update, delete, search members. Member types: Student, Teacher.
  */
 const { getDatabase } = require('../database/connection');
+const barcodeService = require('./barcode-service');
+const logger = require('../logger');
 
 const MEMBER_TYPES = ['Student', 'Teacher'];
 
@@ -35,6 +37,11 @@ function getById(id) {
   return db.prepare('SELECT * FROM Member WHERE id = ?').get(id);
 }
 
+function getByCode(code) {
+  const db = getDatabase();
+  return db.prepare('SELECT * FROM Member WHERE member_code = ?').get(code);
+}
+
 function create(data) {
   const db = getDatabase();
   const { member_type, name, email, phone, address, member_code } = data;
@@ -46,18 +53,30 @@ function create(data) {
   const finalMemberCode = member_code || generateMemberCode();
 
   const stmt = db.prepare(`
-    INSERT INTO Member (member_type, name, email, phone, address, member_code)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO Member (member_type, name, email, phone, address, member_code, barcode_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
+
   const result = stmt.run(
     member_type,
     name || '',
     email || null,
     phone || null,
     address || null,
-    finalMemberCode
+    finalMemberCode,
+    null // barcode_path set later
   );
-  return getById(result.lastInsertRowid);
+
+  const newId = result.lastInsertRowid;
+
+  // Generate Barcode
+  barcodeService.generateBarcode(finalMemberCode).then(barcodePath => {
+    db.prepare('UPDATE Member SET barcode_path = ? WHERE id = ?').run(barcodePath, newId);
+  }).catch(err => {
+    logger.error(`Deferred barcode generation failed for member ${newId}:`, err);
+  });
+
+  return getById(newId);
 }
 
 function update(id, data) {
@@ -76,6 +95,7 @@ function update(id, data) {
       phone = ?,
       address = ?,
       member_code = ?,
+      barcode_path = COALESCE(?, barcode_path),
       updated_at = datetime('now')
     WHERE id = ?
   `).run(
@@ -85,6 +105,7 @@ function update(id, data) {
     phone !== undefined ? phone : existing.phone,
     address !== undefined ? address : existing.address,
     member_code !== undefined ? member_code : existing.member_code,
+    data.barcode_path !== undefined ? data.barcode_path : existing.barcode_path,
     id
   );
   return getById(id);
@@ -97,6 +118,13 @@ function deleteMember(id) {
   const issues = db.prepare('SELECT id FROM Issue WHERE member_id = ? AND return_date IS NULL').all(id);
   if (issues.length > 0) {
     throw new Error('Cannot delete member with active book issues. Return books first.');
+  }
+  if (existing.barcode_path && fs.existsSync(existing.barcode_path)) {
+    try {
+      fs.unlinkSync(existing.barcode_path);
+    } catch (e) {
+      logger.error(`Failed to delete barcode file for member ${id}:`, e);
+    }
   }
   db.prepare('DELETE FROM Member WHERE id = ?').run(id);
   return { deleted: true, id };
@@ -122,6 +150,7 @@ module.exports = {
   update,
   delete: deleteMember,
   search,
+  getByCode,
   generateMemberCode,
   MEMBER_TYPES,
 };

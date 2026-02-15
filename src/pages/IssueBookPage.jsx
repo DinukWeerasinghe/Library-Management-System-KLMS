@@ -11,6 +11,8 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const [books, setBooks] = useState([]);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [selectedBookId, setSelectedBookId] = useState('');
+  const [scanMemberCode, setScanMemberCode] = useState('');
+  const [scannedMember, setScannedMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
@@ -36,6 +38,38 @@ export function IssueBookPage({ features = {}, config = {} }) {
     loadData();
   }, []);
 
+  const handleScanMember = async (code) => {
+    setScanMemberCode(code);
+    if (code.startsWith('KMV') && code.length >= 17) {
+      try {
+        const member = await window.klms.members.getByCode(code);
+        if (member) {
+          setScannedMember(member);
+          setSelectedMemberId(member.id.toString());
+        } else {
+          setScannedMember(null);
+        }
+      } catch (err) {
+        console.error('Scan failed:', err);
+      }
+    } else if (code === '') {
+      setScannedMember(null);
+      setSelectedMemberId('');
+    }
+  };
+
+  const handleManualMemberChange = (id) => {
+    setSelectedMemberId(id);
+    if (!id) {
+      setScannedMember(null);
+      setScanMemberCode('');
+    } else {
+      const member = members.find(m => m.id.toString() === id.toString());
+      setScannedMember(member || null);
+      if (member) setScanMemberCode(member.member_code || '');
+    }
+  };
+
   const availableBooks = books.filter((b) => b.available_copies > 0);
   const maxBorrowDays = parseInt(config.max_borrow_days, 10) || 14;
   const maxBooksPerMember = parseInt(config.max_books_per_member, 10) || 3;
@@ -55,6 +89,8 @@ export function IssueBookPage({ features = {}, config = {} }) {
       await window.klms.issues.issueBook(memberId, bookId);
       showDialog('success', 'Book issued successfully');
       setSelectedMemberId('');
+      setScanMemberCode('');
+      setScannedMember(null);
       setSelectedBookId('');
       loadData();
     } catch (err) {
@@ -82,16 +118,38 @@ export function IssueBookPage({ features = {}, config = {} }) {
 
       <div className="issue-form-card">
         <div className="form-group">
-          <label>Member</label>
+          <label>Scan Member ID / Barcode</label>
+          <div className="scan-input-wrapper">
+            <input
+              type="text"
+              placeholder="Scan or type KMV..."
+              value={scanMemberCode}
+              onChange={(e) => handleScanMember(e.target.value)}
+              className="scan-input"
+              autoFocus
+            />
+            {scannedMember && (
+              <div className="scanned-badge">
+                <span className="scanned-name">{scannedMember.name}</span>
+                <span className="scanned-type">{scannedMember.member_type}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="divider-text">OR SELECT MANUALLY</div>
+
+        <div className="form-group">
+          <label>Member Selection</label>
           <select
             value={selectedMemberId}
-            onChange={(e) => setSelectedMemberId(e.target.value)}
+            onChange={(e) => handleManualMemberChange(e.target.value)}
             disabled={submitting}
           >
             <option value="">Select member</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name} ({m.member_type})
+                {m.name} ({m.member_code || '–'})
               </option>
             ))}
           </select>
@@ -158,6 +216,56 @@ export function IssueBookPage({ features = {}, config = {} }) {
           color: var(--color-text-muted);
           margin-bottom: 0.35rem;
         }
+        .scan-input-wrapper {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        .scan-input {
+          width: 100%;
+          padding: 0.75rem;
+          border: 2px solid var(--color-border);
+          border-radius: var(--radius);
+          background: var(--color-bg);
+          color: var(--color-text);
+          font-family: monospace;
+          font-size: 1rem;
+          transition: border-color 0.2s;
+        }
+        .scan-input:focus {
+          border-color: var(--button-color);
+          outline: none;
+        }
+        .scanned-badge {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--color-bg);
+          padding: 0.75rem;
+          border-radius: var(--radius);
+          border-left: 4px solid #10b981;
+        }
+        .scanned-name { font-weight: 600; font-size: 0.95rem; }
+        .scanned-type { font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 0.1rem 0.5rem; border-radius: 100px; text-transform: uppercase; }
+        
+        .divider-text {
+          text-align: center;
+          font-size: 0.7rem;
+          color: var(--color-text-muted);
+          margin: 1.5rem 0;
+          position: relative;
+        }
+        .divider-text::before, .divider-text::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          width: 30%;
+          height: 1px;
+          background: var(--color-border);
+        }
+        .divider-text::before { left: 0; }
+        .divider-text::after { right: 0; }
+
         .issue-form-card .form-group select {
           width: 100%;
           padding: 0.6rem 0.75rem;

@@ -8,6 +8,7 @@ export function Members() {
   const [form, setForm] = useState({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [viewingBarcode, setViewingBarcode] = useState(null); // { id, code, image }
 
   const load = (filters = {}) => {
     setLoading(true);
@@ -97,6 +98,19 @@ export function Members() {
     }
   };
 
+  const showBarcode = async (m) => {
+    try {
+      const img = await window.klms.members.getBarcodeImage(m.id);
+      if (img) {
+        setViewingBarcode({ id: m.id, code: m.member_code, image: img });
+      } else {
+        alert('Barcode not found for this member.');
+      }
+    } catch (err) {
+      console.error('Failed to load barcode:', err);
+    }
+  };
+
   return (
     <div className="members-view">
       <div className="view-header">
@@ -147,6 +161,7 @@ export function Members() {
                 <th>Name</th>
                 <th>Type</th>
                 <th>Member Code</th>
+                <th>Barcode</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Actions</th>
@@ -158,6 +173,11 @@ export function Members() {
                   <td>{m.name}</td>
                   <td>{m.member_type}</td>
                   <td>{m.member_code || '–'}</td>
+                  <td>
+                    {m.barcode_path ? (
+                      <button type="button" className="btn-sm" onClick={() => showBarcode(m)}>View</button>
+                    ) : '–'}
+                  </td>
                   <td>{m.email || '–'}</td>
                   <td>{m.phone || '–'}</td>
                   <td>
@@ -171,6 +191,26 @@ export function Members() {
         )}
         {!loading && list.length === 0 && <p className="muted">No members found.</p>}
       </div>
+
+      {viewingBarcode && (
+        <div className="barcode-modal-overlay" onClick={() => setViewingBarcode(null)}>
+          <div className="barcode-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Member Barcode</h3>
+              <button className="close-btn" onClick={() => setViewingBarcode(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="barcode-id">{viewingBarcode.code}</div>
+              <img src={viewingBarcode.image} alt="Barcode" className="barcode-img" />
+              <p className="barcode-hint">Use this for ID cards and scanning</p>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => window.print()} className="btn-primary">Print Barcode</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .members-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .members-view .view-header h2 { font-size: 1.25rem; }
@@ -197,6 +237,37 @@ export function Members() {
         .btn-sm:hover { background: var(--color-surface-hover); }
         .btn-sm.danger { color: var(--color-danger); }
         .muted { color: var(--color-text-muted); margin-top: 0.5rem; }
+
+        /* Barcode Modal */
+        .barcode-modal-overlay {
+          position: fixed;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.5);
+          display: flex; align-items: center; justify-content: center;
+          z-index: 1000;
+        }
+        .barcode-modal {
+          background: white;
+          padding: 2rem;
+          border-radius: var(--radius);
+          max-width: 400px;
+          width: 90%;
+          text-align: center;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .barcode-modal .modal-header {
+           display: flex; justify-content: space-between; align-items: center;
+           margin-bottom: 1.5rem;
+           border-bottom: 1px solid #eee;
+           padding-bottom: 0.5rem;
+        }
+        .barcode-modal .close-btn {
+          background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999;
+        }
+        .barcode-id { font-weight: bold; font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
+        .barcode-img { max-width: 100%; height: auto; border: 1px solid #eee; padding: 1rem; background: white; margin-bottom: 1rem; }
+        .barcode-hint { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
+        .modal-actions { display: flex; justify-content: center; }
       `}</style>
     </div>
   );
