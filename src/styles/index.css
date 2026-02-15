@@ -1,19 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Modern Dark Theme - Slate Palette */
-  --color-bg: #020617;
-  --color-surface: #0f172a;
-  --color-surface-hover: #1e293b;
-  --color-border: #1e293b;
+  /* Modern Professional Theme - Slate & Indigo */
+  --color-bg: #0f172a;
+  /* Darker Slate */
+  --color-surface: #1e293b;
+  /* Slate 800 */
+  --color-surface-hover: #334155;
+  --color-border: #334155;
 
   --color-text: #f8fafc;
-  /* Colors */
   --color-text-muted: #94a3b8;
 
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-primary-light: rgba(59, 130, 246, 0.1);
+  --color-primary: #4f46e5;
+  /* Indigo 600 */
+  --color-primary-hover: #4338ca;
+  /* Indigo 700 */
+  --color-primary-light: rgba(79, 70, 229, 0.1);
   --color-secondary: #64748b;
 
   --color-success: #10b981;
@@ -21,9 +24,10 @@
   --color-danger: #ef4444;
 
   /* Specific Components */
-  --sidebar-bg: var(--color-surface);
+  --sidebar-bg: #111827;
+  /* Gray 900 */
   --btn-primary-bg: var(--color-primary);
-  --header-text: var(--color-text);
+  --header-text: #ffffff;
 
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 
