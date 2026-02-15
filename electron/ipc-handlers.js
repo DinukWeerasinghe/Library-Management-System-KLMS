@@ -106,6 +106,7 @@ function registerIpcHandlers() {
     return memberService.delete(id);
   });
   ipcMain.handle('members:search', async (_, query) => memberService.search(query));
+  ipcMain.handle('members:generateCode', async () => memberService.generateMemberCode());
 
   // --- Categories ---
   ipcMain.handle('categories:getAll', async () => categoryService.getAll());

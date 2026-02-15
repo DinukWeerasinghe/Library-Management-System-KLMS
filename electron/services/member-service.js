@@ -18,6 +18,18 @@ function getAll(filters = {}) {
   return db.prepare(sql).all(...params);
 }
 
+function generateMemberCode() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+
+  return `KMV${year}${month}${day}${hours}${minutes}${seconds}`;
+}
+
 function getById(id) {
   const db = getDatabase();
   return db.prepare('SELECT * FROM Member WHERE id = ?').get(id);
@@ -25,12 +37,16 @@ function getById(id) {
 
 function create(data) {
   const db = getDatabase();
-  const { member_type, name, email, phone, address, member_id } = data;
+  const { member_type, name, email, phone, address, member_code } = data;
   if (!MEMBER_TYPES.includes(member_type)) {
     throw new Error('Invalid member_type. Must be Student or Teacher.');
   }
+
+  // Use provided code or auto-generate
+  const finalMemberCode = member_code || generateMemberCode();
+
   const stmt = db.prepare(`
-    INSERT INTO Member (member_type, name, email, phone, address, member_id)
+    INSERT INTO Member (member_type, name, email, phone, address, member_code)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
@@ -39,7 +55,7 @@ function create(data) {
     email || null,
     phone || null,
     address || null,
-    member_id || null
+    finalMemberCode
   );
   return getById(result.lastInsertRowid);
 }
@@ -48,7 +64,7 @@ function update(id, data) {
   const db = getDatabase();
   const existing = getById(id);
   if (!existing) throw new Error('Member not found');
-  const { member_type, name, email, phone, address, member_id } = data;
+  const { member_type, name, email, phone, address, member_code } = data;
   if (member_type && !MEMBER_TYPES.includes(member_type)) {
     throw new Error('Invalid member_type. Must be Student or Teacher.');
   }
@@ -59,7 +75,7 @@ function update(id, data) {
       email = ?,
       phone = ?,
       address = ?,
-      member_id = ?,
+      member_code = ?,
       updated_at = datetime('now')
     WHERE id = ?
   `).run(
@@ -68,7 +84,7 @@ function update(id, data) {
     email !== undefined ? email : existing.email,
     phone !== undefined ? phone : existing.phone,
     address !== undefined ? address : existing.address,
-    member_id !== undefined ? member_id : existing.member_id,
+    member_code !== undefined ? member_code : existing.member_code,
     id
   );
   return getById(id);
@@ -94,7 +110,7 @@ function search(query) {
   const term = `%${query.trim()}%`;
   return db.prepare(`
     SELECT * FROM Member
-    WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_id LIKE ?
+    WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_code LIKE ?
     ORDER BY name
   `).all(term, term, term, term);
 }
@@ -106,5 +122,6 @@ module.exports = {
   update,
   delete: deleteMember,
   search,
+  generateMemberCode,
   MEMBER_TYPES,
 };

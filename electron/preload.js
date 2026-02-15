@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('klms', {
     update: (id, data) => ipcRenderer.invoke('members:update', id, data),
     delete: (id) => ipcRenderer.invoke('members:delete', id),
     search: (query) => ipcRenderer.invoke('members:search', query),
+    generateCode: () => ipcRenderer.invoke('members:generateCode'),
   },
   // Categories (when enable_categories is on)
   categories: {

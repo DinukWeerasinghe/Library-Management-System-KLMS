@@ -62,7 +62,7 @@ export function Login({ onSuccess }) {
       return (item.title?.toLowerCase().includes(search) || item.author?.toLowerCase().includes(search));
     }
     if (publicView === 'members') {
-      return (item.name?.toLowerCase().includes(search) || item.member_id?.toLowerCase().includes(search));
+      return (item.name?.toLowerCase().includes(search) || item.member_code?.toLowerCase().includes(search));
     }
     if (publicView === 'due') {
       return (item.book_title?.toLowerCase().includes(search) || item.member_name?.toLowerCase().includes(search));
@@ -198,7 +198,7 @@ export function Login({ onSuccess }) {
                       <div key={m.id} className="public-item">
                         <div className="item-info">
                           <div className="item-main">{m.name}</div>
-                          <div className="item-sub">{m.member_id} • {m.member_type}</div>
+                          <div className="item-sub">{m.member_code} • {m.member_type}</div>
                         </div>
                       </div>
                     ))}

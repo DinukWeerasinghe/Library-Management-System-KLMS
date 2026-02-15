@@ -5,7 +5,7 @@ export function Members() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_id: '' });
+  const [form, setForm] = useState({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState('');
 
@@ -33,10 +33,20 @@ export function Members() {
     }).catch(() => setLoading(false));
   };
 
-  const openCreate = () => {
+  const openCreate = async () => {
+    // Reset form immediately to avoid old data or lag
+    setForm({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
     setEditing('new');
-    setForm({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_id: '' });
     setError('');
+
+    try {
+      const newCode = await window.klms.members.generateCode();
+      // Update ONLY the code, preserving any user input if they started typing
+      setForm(prev => ({ ...prev, member_code: newCode }));
+    } catch (err) {
+      console.error('Failed to generate code:', err);
+      setError('Auto-generation failed. Please enter code manually.');
+    }
   };
 
   const openEdit = (m) => {
@@ -47,7 +57,7 @@ export function Members() {
       email: m.email || '',
       phone: m.phone || '',
       address: m.address || '',
-      member_id: m.member_id || '',
+      member_code: m.member_code || '',
     });
     setError('');
   };
@@ -101,7 +111,7 @@ export function Members() {
         </select>
         <input
           type="text"
-          placeholder="Search by name, email, phone, member ID..."
+          placeholder="Search by name, email, phone, member code..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -118,7 +128,7 @@ export function Members() {
               <option value="Teacher">Teacher</option>
             </select></label>
             <label>Name * <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-            <label>Member ID <input value={form.member_id} onChange={(e) => setForm({ ...form, member_id: e.target.value })} placeholder="Optional" /></label>
+            <label>Member Code <input value={form.member_code} onChange={(e) => setForm({ ...form, member_code: e.target.value })} placeholder="Auto-generated if blank" /></label>
             <label>Email <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
             <label>Phone <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
             <label>Address <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
@@ -136,7 +146,7 @@ export function Members() {
               <tr>
                 <th>Name</th>
                 <th>Type</th>
-                <th>Member ID</th>
+                <th>Member Code</th>
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Actions</th>
@@ -147,7 +157,7 @@ export function Members() {
                 <tr key={m.id}>
                   <td>{m.name}</td>
                   <td>{m.member_type}</td>
-                  <td>{m.member_id || '–'}</td>
+                  <td>{m.member_code || '–'}</td>
                   <td>{m.email || '–'}</td>
                   <td>{m.phone || '–'}</td>
                   <td>
