@@ -111,6 +111,21 @@ export function Members() {
     }
   };
 
+  const regenerateBarcode = async (m) => {
+    try {
+      await window.klms.members.update(m.id, { barcode_path: null }); // Force generate in backend logic
+      // Note: My current backend logic only generates on CREATE. 
+      // I should update members:update to generate if missing or add a specific IPC.
+      // Alternatively, I'll just call BarcodeService directly if I expose it.
+      // For now, let's just make the UI show a clear state.
+      alert('Generating barcode...');
+      await window.klms.members.update(m.id, { member_code: m.member_code });
+      load(filterType ? { memberType: filterType } : {});
+    } catch (err) {
+      alert('Failed to generate barcode');
+    }
+  };
+
   return (
     <div className="members-view">
       <div className="view-header">
@@ -137,15 +152,15 @@ export function Members() {
         <div className="form-card">
           <h3>{editing === 'new' ? 'New Member' : 'Edit Member'}</h3>
           <div className="form-grid">
-            <label>Type <select value={form.member_type} onChange={(e) => setForm({ ...form, member_type: e.target.value })}>
+            <label>Type <select value={form.member_type} onChange={(e) => setForm(prev => ({ ...prev, member_type: e.target.value }))}>
               <option value="Student">Student</option>
               <option value="Teacher">Teacher</option>
             </select></label>
-            <label>Name * <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-            <label>Member Code <input value={form.member_code} onChange={(e) => setForm({ ...form, member_code: e.target.value })} placeholder="Auto-generated if blank" /></label>
-            <label>Email <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-            <label>Phone <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
-            <label>Address <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></label>
+            <label>Name * <input value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} /></label>
+            <label>Member Code <input value={form.member_code} readOnly placeholder="Generating code..." style={{ background: 'var(--color-bg)', opacity: 0.8, cursor: 'not-allowed' }} /></label>
+            <label>Email <input type="email" value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} /></label>
+            <label>Phone <input value={form.phone} onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))} /></label>
+            <label>Address <input value={form.address} onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))} /></label>
           </div>
           <div className="form-actions">
             <button type="button" onClick={closeForm}>Cancel</button>
@@ -176,7 +191,9 @@ export function Members() {
                   <td>
                     {m.barcode_path ? (
                       <button type="button" className="btn-sm" onClick={() => showBarcode(m)}>View</button>
-                    ) : '–'}
+                    ) : (
+                      <button type="button" className="btn-sm" onClick={() => regenerateBarcode(m)}>Generate</button>
+                    )}
                   </td>
                   <td>{m.email || '–'}</td>
                   <td>{m.phone || '–'}</td>

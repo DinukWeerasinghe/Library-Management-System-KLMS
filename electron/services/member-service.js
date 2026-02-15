@@ -94,7 +94,6 @@ function update(id, data) {
       email = ?,
       phone = ?,
       address = ?,
-      member_code = ?,
       barcode_path = COALESCE(?, barcode_path),
       updated_at = datetime('now')
     WHERE id = ?
@@ -104,10 +103,19 @@ function update(id, data) {
     email !== undefined ? email : existing.email,
     phone !== undefined ? phone : existing.phone,
     address !== undefined ? address : existing.address,
-    member_code !== undefined ? member_code : existing.member_code,
     data.barcode_path !== undefined ? data.barcode_path : existing.barcode_path,
     id
   );
+
+  // If barcode is missing, generate it
+  if (!existing.barcode_path && !data.barcode_path) {
+    barcodeService.generateBarcode(existing.member_code).then(barcodePath => {
+      db.prepare('UPDATE Member SET barcode_path = ? WHERE id = ?').run(barcodePath, id);
+    }).catch(err => {
+      logger.error(`Deferred barcode generation failed for existing member ${id}: `, err);
+    });
+  }
+
   return getById(id);
 }
 
@@ -123,7 +131,7 @@ function deleteMember(id) {
     try {
       fs.unlinkSync(existing.barcode_path);
     } catch (e) {
-      logger.error(`Failed to delete barcode file for member ${id}:`, e);
+      logger.error(`Failed to delete barcode file for member ${id}: `, e);
     }
   }
   db.prepare('DELETE FROM Member WHERE id = ?').run(id);
@@ -135,12 +143,12 @@ function search(query) {
     return getAll({});
   }
   const db = getDatabase();
-  const term = `%${query.trim()}%`;
+  const term = `% ${query.trim()}% `;
   return db.prepare(`
-    SELECT * FROM Member
+  SELECT * FROM Member
     WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_code LIKE ?
     ORDER BY name
-  `).all(term, term, term, term);
+      `).all(term, term, term, term);
 }
 
 module.exports = {
