@@ -125,20 +125,36 @@ export function UsersPage() {
         .users-page { padding: 1rem; }
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th, .data-table td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--color-border); }
+        .data-table th, .data-table td { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--color-border); color: var(--color-text); }
         .role-badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-        .role-admin { background: #fee2e2; color: #991b1b; }
-        .role-librarian { background: #dbeafe; color: #1e40af; }
-        .role-teacher { background: #d1fae5; color: #065f46; }
+        .role-admin { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .role-librarian { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+        .role-teacher { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
         .btn-primary { background: var(--color-primary); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
-        .btn-danger { background: #ef4444; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
-        .modal { background: white; padding: 2rem; border-radius: 8px; width: 400px; }
+        .btn-danger { background: var(--color-danger); color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal { background: var(--color-surface); padding: 2rem; border-radius: var(--radius); width: 400px; border: 1px solid var(--color-border); box-shadow: var(--shadow-lg); }
+        .modal h3 { margin-top: 0; color: var(--color-text); }
         .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; }
-        .form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--color-text-muted); }
+        .form-group input, .form-group select { 
+            width: 100%; 
+            padding: 0.5rem; 
+            background: var(--color-bg); 
+            border: 1px solid var(--color-border); 
+            border-radius: 4px; 
+            color: var(--color-text);
+        }
+        .form-group input:focus, .form-group select:focus { border-color: var(--color-primary); outline: none; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1.5rem; }
-      `}</style>
+        .modal-actions button[type="button"] { 
+            background: transparent; 
+            border: 1px solid var(--color-border); 
+            color: var(--color-text); 
+            padding: 0.5rem 1rem; 
+            border-radius: 4px; 
+        }
+        .modal-actions button[type="button"]:hover { background: var(--color-surface-hover); }      `}</style>
         </div>
     );
 }
