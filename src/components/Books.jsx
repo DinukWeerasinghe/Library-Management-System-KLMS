@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useScanDetection } from '../hooks/useScanDetection';
 
 export function Books({ features = {} }) {
   const [list, setList] = useState([]);
@@ -28,6 +29,19 @@ export function Books({ features = {} }) {
   useEffect(() => {
     loadBooks();
   }, []);
+
+  useScanDetection({
+    onScanDetected: (code) => {
+      if (editing) {
+        // If form is open, populate whichever field makes sense
+        if (code.length >= 10 && !isNaN(code.charAt(0))) {
+          setForm(prev => ({ ...prev, isbn: code }));
+        } else {
+          setForm(prev => ({ ...prev, external_code: code }));
+        }
+      }
+    }
+  });
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {

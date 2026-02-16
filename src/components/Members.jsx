@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useScanDetection } from '../hooks/useScanDetection';
 
 export function Members() {
   const [list, setList] = useState([]);
@@ -21,6 +22,14 @@ export function Members() {
   useEffect(() => {
     load(filterType ? { memberType: filterType } : {});
   }, [filterType]);
+
+  useScanDetection({
+    onScanDetected: (code) => {
+      if (editing && code.startsWith('KMV')) {
+        setForm(prev => ({ ...prev, member_code: code }));
+      }
+    }
+  });
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {

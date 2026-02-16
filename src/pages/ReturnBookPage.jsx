@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AppDialog } from '../components/AppDialog';
+import { useScanDetection } from '../hooks/useScanDetection';
 
 /**
  * Return Book screen.
@@ -33,6 +34,12 @@ export function ReturnBookPage({ features = {} }) {
   useEffect(() => {
     loadIssued();
   }, []);
+
+  useScanDetection({
+    onScanDetected: (code) => {
+      processScan(code);
+    }
+  });
 
   const handleReturn = async (issueId) => {
     setReturningId(issueId);
