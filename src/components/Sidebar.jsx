@@ -8,7 +8,8 @@ import {
   Library,
   UserCheck,
   ArrowRightLeft,
-  Lock
+  Lock,
+  Activity
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { PermissionService } from '../services/PermissionService';

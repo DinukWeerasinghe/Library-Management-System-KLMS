@@ -177,15 +177,6 @@ app.whenReady().then(async () => {
     }
   });
 
-  ipcMain.handle('app:logLock', () => {
-    const userId = authService.getCurrentUserId();
-    if (userId) activityService.logSessionLock(userId);
-  });
-
-  ipcMain.handle('app:logUnlock', () => {
-    const userId = authService.getCurrentUserId();
-    if (userId) activityService.logSessionUnlock(userId);
-  });
 });
 
 app.on('window-all-closed', () => {

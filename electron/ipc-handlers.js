@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const { getDbPath } = require('./database/connection');
 const authService = require('./services/auth-service');
+const activityService = require('./services/activity-service');
 const configService = require('./services/config-service');
 const featureToggleRepo = require('./database/feature-toggle-repository');
 const memberService = require('./services/member-service');
@@ -86,6 +87,17 @@ function registerIpcHandlers() {
     const session = authService.getSession();
     if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
     return featureToggleRepo.set(key, enabled);
+  });
+
+  // --- Session Locking ---
+  ipcMain.handle('app:logLock', () => {
+    const userId = authService.getCurrentUserId();
+    if (userId) activityService.logSessionLock(userId);
+  });
+
+  ipcMain.handle('app:logUnlock', () => {
+    const userId = authService.getCurrentUserId();
+    if (userId) activityService.logSessionUnlock(userId);
   });
 
   // --- Members ---

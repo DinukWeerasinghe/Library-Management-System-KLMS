@@ -75,6 +75,7 @@ function logSessionLock(userId) {
     } catch (err) {
         logger.error('Failed to log session lock:', err);
     }
+    logActivity(userId, ACTION_TYPES.LOCK_SESSION, 'Session Locked');
 }
 
 /**
@@ -92,6 +93,7 @@ function logSessionUnlock(userId) {
     } catch (err) {
         logger.error('Failed to log session unlock:', err);
     }
+    logActivity(userId, ACTION_TYPES.UNLOCK_SESSION, 'Session Unlocked');
 }
 
 /**
