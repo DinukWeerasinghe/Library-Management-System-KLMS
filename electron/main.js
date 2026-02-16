@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 
@@ -6,6 +6,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 // --- Logging Setup ---
 const logger = require('./logger');
+const configRepository = require('./database/config-repository');
 logger.clear();
 logger.info('App starting...');
 logger.info(`Environment: ${isDev ? 'Development' : 'Production'}`);
@@ -54,6 +55,14 @@ function createWindow() {
 
   mainWindow.webContents.on('crashed', () => {
     logger.info('Renderer process crashed!');
+  });
+
+  mainWindow.on('close', async (e) => {
+    const isPinEnabled = configRepository.get('exit_pin_enabled') === '1';
+    if (isPinEnabled && !app.isQuitting) {
+      e.preventDefault();
+      mainWindow.webContents.send('app:requestExitPin');
+    }
   });
 }
 
@@ -133,12 +142,14 @@ app.whenReady().then(async () => {
     const { runBookHybridIdMigration } = require('./database/migrate-book-barcode');
     const { runMemberValidityMigration } = require('./database/migrate-member-validity');
     const { runBookBarcodeFillMigration } = require('./database/migrate-book-barcode-fill');
+    const { runExitPinMigration } = require('./database/migrate-exit-pin');
 
     runMemberCodeMigration();
     runMemberBarcodeMigration();
     runBookHybridIdMigration();
     runMemberValidityMigration();
     await runBookBarcodeFillMigration();
+    runExitPinMigration();
 
     registerIpcHandlers();
     logger.info('IPC handlers registered.');
@@ -150,6 +161,10 @@ app.whenReady().then(async () => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+  ipcMain.handle('app:forceQuit', () => {
+    app.isQuitting = true;
+    app.quit();
   });
 });
 

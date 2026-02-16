@@ -29,6 +29,11 @@ const BRANDING_KEYS = [
   { key: 'school_name', label: 'School Name', type: 'text' },
 ];
 
+const EXIT_PIN_KEYS = [
+  { key: 'exit_pin_enabled', label: 'Enable Exit PIN Security', type: 'toggle' },
+  { key: 'exit_pin', label: 'Application Exit PIN', type: 'text' },
+];
+
 export function SettingsPage({ features: propFeatures, onFeaturesChange, session }) {
   const [config, setConfig] = useState({});
   const [features, setFeatures] = useState(propFeatures || {});
@@ -276,6 +281,46 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           <button type="button" className="btn-primary" onClick={handleSaveBranding}>
             Save branding
           </button>
+        </section>
+      )}
+
+      {/* Application Security Settings (Admin Only) */}
+      {isAdmin && (
+        <section className="settings-section">
+          <h3>Application Security</h3>
+          <p className="muted">Require a PIN to close the application.</p>
+          <div className="toggle-list">
+            <div className="toggle-row">
+              <span className="toggle-label">Enable Exit PIN</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={config.exit_pin_enabled === '1'}
+                className={`toggle-switch ${config.exit_pin_enabled === '1' ? 'on' : 'off'}`}
+                onClick={() => window.klms.config.set('exit_pin_enabled', config.exit_pin_enabled === '1' ? '0' : '1').then(() => setConfig(prev => ({ ...prev, exit_pin_enabled: config.exit_pin_enabled === '1' ? '0' : '1' })))}
+              >
+                <span className="toggle-slider" />
+              </button>
+            </div>
+          </div>
+          {config.exit_pin_enabled === '1' && (
+            <div className="config-grid" style={{ marginTop: '1rem' }}>
+              <label>
+                Set Exit PIN (Numeric)
+                <input
+                  type="number"
+                  pattern="[0-9]*"
+                  inputMode="numeric"
+                  placeholder="Enter Numeric PIN"
+                  value={config.exit_pin || ''}
+                  onChange={(e) => handleConfigChange('exit_pin', e.target.value)}
+                />
+              </label>
+              <button type="button" className="btn-primary" style={{ alignSelf: 'flex-end', height: '40px' }} onClick={() => window.klms.config.set('exit_pin', config.exit_pin).then(() => DialogService.showSuccess('Exit PIN saved.'))}>
+                Save PIN
+              </button>
+            </div>
+          )}
         </section>
       )}
 

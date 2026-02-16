@@ -36,7 +36,9 @@ function runInit(wrappedDb) {
     ['background_color', '#0f172a', 'Application background color'],
     ['school_name', 'Kumaradasa Library Management System', 'Name of the library/school'],
     ['school_logo', '', 'Base64 or path to school logo'],
-    ['registration_fee', '0', 'Member registration fee']
+    ['registration_fee', '0', 'Member registration fee'],
+    ['exit_pin_enabled', '0', 'Enable Exit PIN Security'],
+    ['exit_pin', '1234', 'Application Exit PIN']
   ];
   defaultConfig.forEach(([k, v, d]) => {
     wrappedDb.prepare('INSERT OR IGNORE INTO Configuration (key, value, description) VALUES (?, ?, ?)').run(k, v, d);

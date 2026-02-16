@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { DialogProvider } from './components/DialogProvider';
+import { ExitPinGate } from './components/ExitPinGate';
 import './styles/index.css';
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
     <>
       <Dashboard session={session} onLogout={handleLogout} />
       <DialogProvider />
+      <ExitPinGate />
     </>
   );
 }
