@@ -15,6 +15,7 @@ const CONFIG_KEYS = [
   { key: 'max_books_per_member', label: 'Max books per member' },
   { key: 'fine_per_day', label: 'Fine per day' },
   { key: 'grace_period', label: 'Grace period (days)' },
+  { key: 'registration_fee', label: 'Registration Fee' },
 ];
 
 const BRANDING_KEYS = [

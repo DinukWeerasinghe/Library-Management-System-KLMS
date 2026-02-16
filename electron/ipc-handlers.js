@@ -106,6 +106,7 @@ function registerIpcHandlers() {
     return memberService.delete(id);
   });
   ipcMain.handle('members:generateCode', async () => memberService.generateMemberCode());
+  ipcMain.handle('members:isActive', async (_, id) => memberService.isMembershipActive(id));
   ipcMain.handle('members:getByCode', async (_, code) => memberService.getByCode(code));
   ipcMain.handle('members:getBarcodeImage', async (_, id) => {
     const member = await memberService.getById(id);

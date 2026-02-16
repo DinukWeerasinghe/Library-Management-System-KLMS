@@ -10,7 +10,7 @@ function runInit(wrappedDb) {
     CREATE TABLE IF NOT EXISTS Configuration (key TEXT PRIMARY KEY, value TEXT NOT NULL, description TEXT, updated_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS FeatureToggle (key TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1, description TEXT, updated_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS Category (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE NOT NULL, description TEXT, created_at TEXT DEFAULT (datetime('now')));
-    CREATE TABLE IF NOT EXISTS Member (id INTEGER PRIMARY KEY AUTOINCREMENT, member_type TEXT NOT NULL CHECK (member_type IN ('Student', 'Teacher')), name TEXT NOT NULL, email TEXT, phone TEXT, address TEXT, member_code TEXT UNIQUE, barcode_path TEXT, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
+    CREATE TABLE IF NOT EXISTS Member (id INTEGER PRIMARY KEY AUTOINCREMENT, member_type TEXT NOT NULL CHECK (member_type IN ('Student', 'Teacher')), name TEXT NOT NULL, email TEXT, phone TEXT, address TEXT, member_code TEXT UNIQUE, barcode_path TEXT, registration_date TEXT, expiry_date TEXT, registration_fee_paid REAL, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')));
     CREATE TABLE IF NOT EXISTS Book (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, author TEXT, isbn TEXT, category_id INTEGER, external_code TEXT, internal_code TEXT, barcode_path TEXT, total_copies INTEGER NOT NULL DEFAULT 1, available_copies INTEGER NOT NULL DEFAULT 1, created_at TEXT DEFAULT (datetime('now')), updated_at TEXT DEFAULT (datetime('now')), FOREIGN KEY (category_id) REFERENCES Category(id));
     CREATE TABLE IF NOT EXISTS Issue (id INTEGER PRIMARY KEY AUTOINCREMENT, book_id INTEGER NOT NULL, member_id INTEGER NOT NULL, issue_date TEXT NOT NULL DEFAULT (date('now')), due_date TEXT, return_date TEXT, renewed INTEGER DEFAULT 0, status TEXT NOT NULL DEFAULT 'ISSUED', fine_amount REAL NOT NULL DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), FOREIGN KEY (book_id) REFERENCES Book(id), FOREIGN KEY (member_id) REFERENCES Member(id));
     CREATE TABLE IF NOT EXISTS Fine (id INTEGER PRIMARY KEY AUTOINCREMENT, issue_id INTEGER NOT NULL, amount REAL NOT NULL DEFAULT 0, paid INTEGER DEFAULT 0, created_at TEXT DEFAULT (datetime('now')), paid_at TEXT, FOREIGN KEY (issue_id) REFERENCES Issue(id));
@@ -35,7 +35,8 @@ function runInit(wrappedDb) {
     ['header_text_color', '#ffffff', 'Header text color'],
     ['background_color', '#0f172a', 'Application background color'],
     ['school_name', 'Kumaradasa Library Management System', 'Name of the library/school'],
-    ['school_logo', '', 'Base64 or path to school logo']
+    ['school_logo', '', 'Base64 or path to school logo'],
+    ['registration_fee', '0', 'Member registration fee']
   ];
   defaultConfig.forEach(([k, v, d]) => {
     wrappedDb.prepare('INSERT OR IGNORE INTO Configuration (key, value, description) VALUES (?, ?, ?)').run(k, v, d);

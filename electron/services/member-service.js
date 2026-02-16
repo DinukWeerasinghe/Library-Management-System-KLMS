@@ -4,6 +4,7 @@
  */
 const { getDatabase } = require('../database/connection');
 const barcodeService = require('./barcode-service');
+const configRepository = require('../database/config-repository');
 const logger = require('../logger');
 
 const MEMBER_TYPES = ['Student', 'Teacher'];
@@ -52,9 +53,18 @@ function create(data) {
   // Use provided code or auto-generate
   const finalMemberCode = member_code || generateMemberCode();
 
+  // Registration details
+  const regFee = parseFloat(configRepository.get('registration_fee') || 0);
+  const today = new Date();
+  const regDateStr = today.toISOString().split('T')[0];
+
+  const expiryDate = new Date(today);
+  expiryDate.setFullYear(today.getFullYear() + 1);
+  const expiryDateStr = expiryDate.toISOString().split('T')[0];
+
   const stmt = db.prepare(`
-    INSERT INTO Member (member_type, name, email, phone, address, member_code, barcode_path)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO Member (member_type, name, email, phone, address, member_code, barcode_path, registration_date, expiry_date, registration_fee_paid)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const result = stmt.run(
@@ -64,7 +74,10 @@ function create(data) {
     phone || null,
     address || null,
     finalMemberCode,
-    null // barcode_path set later
+    null, // barcode_path set later
+    regDateStr,
+    expiryDateStr,
+    regFee
   );
 
   const newId = result.lastInsertRowid;
@@ -151,6 +164,14 @@ function search(query) {
       `).all(term, term, term, term);
 }
 
+function isMembershipActive(memberId) {
+  const m = getById(memberId);
+  if (!m || !m.expiry_date) return true; // Default to active if no expiry set
+
+  const today = new Date().toISOString().split('T')[0];
+  return today <= m.expiry_date;
+}
+
 module.exports = {
   getAll,
   getById,
@@ -161,4 +182,5 @@ module.exports = {
   getByCode,
   generateMemberCode,
   MEMBER_TYPES,
+  isMembershipActive,
 };

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
+import { AppDialog } from './AppDialog';
 
 export function Members() {
   const [list, setList] = useState([]);
@@ -10,6 +11,9 @@ export function Members() {
   const [error, setError] = useState('');
   const [filterType, setFilterType] = useState('');
   const [viewingBarcode, setViewingBarcode] = useState(null); // { id, code, image }
+  const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const load = (filters = {}) => {
     setLoading(true);
@@ -23,12 +27,14 @@ export function Members() {
     load(filterType ? { memberType: filterType } : {});
   }, [filterType]);
 
-  useScanDetection({
-    onScanDetected: (code) => {
-      if (editing && code.startsWith('KMV')) {
-        setForm(prev => ({ ...prev, member_code: code }));
-      }
+  const handleScanDetected = useCallback((code) => {
+    if (editing && code.startsWith('KMV')) {
+      setForm(prev => ({ ...prev, member_code: code }));
     }
+  }, [editing]);
+
+  useScanDetection({
+    onScanDetected: handleScanDetected
   });
 
   const handleSearch = () => {
@@ -44,18 +50,24 @@ export function Members() {
   };
 
   const openCreate = async () => {
-    // Reset form immediately to avoid old data or lag
+    if (isGeneratingCode) return;
+
+    // reset everything first
+    setError('');
     setForm({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
     setEditing('new');
-    setError('');
+    setIsGeneratingCode(true);
 
     try {
       const newCode = await window.klms.members.generateCode();
-      // Update ONLY the code, preserving any user input if they started typing
-      setForm(prev => ({ ...prev, member_code: newCode }));
+      if (typeof newCode === 'string') {
+        setForm(prev => ({ ...prev, member_code: newCode }));
+      }
     } catch (err) {
       console.error('Failed to generate code:', err);
       setError('Auto-generation failed. Please enter code manually.');
+    } finally {
+      setIsGeneratingCode(false);
     }
   };
 
@@ -78,13 +90,23 @@ export function Members() {
   };
 
   const save = async () => {
+    if (isSubmitting) return;
     setError('');
+
     if (!form.name?.trim()) {
       setError('Name is required');
       return;
     }
+
+    setIsSubmitting(true);
     try {
       if (editing === 'new') {
+        const config = await window.klms.config.getAll();
+        const fee = config.registration_fee || '0';
+        if (!window.confirm(`Is the registration fee of ${fee} paid?`)) {
+          setIsSubmitting(false);
+          return;
+        }
         await window.klms.members.create(form);
       } else {
         await window.klms.members.update(editing, form);
@@ -93,6 +115,8 @@ export function Members() {
       load(filterType ? { memberType: filterType } : {});
     } catch (err) {
       setError(err.message || 'Failed to save');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -166,14 +190,24 @@ export function Members() {
               <option value="Teacher">Teacher</option>
             </select></label>
             <label>Name * <input value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} /></label>
-            <label>Member Code <input value={form.member_code} readOnly placeholder="Generating code..." style={{ background: 'var(--color-bg)', opacity: 0.8, cursor: 'not-allowed' }} /></label>
+            <label>Member Code
+              <input
+                value={form.member_code}
+                onChange={(e) => setForm(prev => ({ ...prev, member_code: e.target.value }))}
+                placeholder={isGeneratingCode ? "Generating..." : "Enter code"}
+                disabled={isGeneratingCode}
+                style={{ background: isGeneratingCode ? 'var(--color-bg)' : undefined, opacity: isGeneratingCode ? 0.6 : 1 }}
+              />
+            </label>
             <label>Email <input type="email" value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} /></label>
             <label>Phone <input value={form.phone} onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))} /></label>
             <label>Address <input value={form.address} onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))} /></label>
           </div>
           <div className="form-actions">
-            <button type="button" onClick={closeForm}>Cancel</button>
-            <button type="button" className="btn-primary" onClick={save}>Save</button>
+            <button type="button" onClick={closeForm} disabled={isSubmitting}>Cancel</button>
+            <button type="button" className="btn-primary" onClick={save} disabled={isSubmitting}>
+              {isSubmitting ? 'Saving...' : 'Save'}
+            </button>
           </div>
         </div>
       )}
@@ -236,6 +270,13 @@ export function Members() {
           </div>
         </div>
       )}
+
+      <AppDialog
+        open={dialog.open}
+        type={dialog.type}
+        message={dialog.message}
+        onClose={() => setDialog(d => ({ ...d, open: false }))}
+      />
 
       <style>{`
         .members-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }

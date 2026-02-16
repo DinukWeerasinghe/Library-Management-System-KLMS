@@ -6,6 +6,7 @@ const { getDatabase } = require('../database/connection');
 const { get: getConfig } = require('../database/config-repository');
 const { get: isFeatureEnabled } = require('../database/feature-toggle-repository');
 const bookService = require('./book-service');
+const memberService = require('./member-service');
 
 /**
  * Issue (lend) a book to a member.
@@ -16,9 +17,13 @@ const bookService = require('./book-service');
 function issueBook(memberId, bookId) {
   const db = getDatabase();
 
-  // 1. Check book exists
   const book = bookService.getById(bookId);
   if (!book) throw new Error('Book not found');
+
+  // 1.5. Check membership validity
+  if (!memberService.isMembershipActive(memberId)) {
+    throw new Error('Membership expired. Please renew.');
+  }
 
   // 2. Check available copies
   if (book.available_copies <= 0) {

@@ -14,11 +14,12 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
     success: 'Success',
     error: 'Error',
     info: 'Information',
+    loading: 'Processing...',
   };
   const title = titles[type] || 'Message';
 
   return (
-    <div className="app-dialog-overlay" onClick={onClose} role="presentation">
+    <div className="app-dialog-overlay" onClick={type === 'loading' ? undefined : onClose} role="presentation">
       <div
         className={`app-dialog app-dialog--${type}`}
         onClick={(e) => e.stopPropagation()}
@@ -29,12 +30,22 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         <h3 id="app-dialog-title" className="app-dialog-title">
           {title}
         </h3>
+
+        {type === 'loading' && (
+          <div className="spinner-container">
+            <div className="spinner"></div>
+          </div>
+        )}
+
         <p id="app-dialog-message" className="app-dialog-message">
           {message}
         </p>
-        <button type="button" className="app-dialog-ok" onClick={onClose}>
-          OK
-        </button>
+
+        {type !== 'loading' && (
+          <button type="button" className="app-dialog-ok" onClick={onClose}>
+            OK
+          </button>
+        )}
       </div>
       <style>{`
         .app-dialog-overlay {
@@ -58,6 +69,7 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         .app-dialog--success { border-left: 4px solid var(--color-success); }
         .app-dialog--error { border-left: 4px solid var(--color-danger); }
         .app-dialog--info { border-left: 4px solid var(--color-primary); }
+        .app-dialog--loading { border-left: 4px solid var(--color-warning); }
         .app-dialog-title {
           font-size: 1rem;
           margin-bottom: 0.5rem;
@@ -66,6 +78,23 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         .app-dialog--success .app-dialog-title { color: var(--color-success); }
         .app-dialog--error .app-dialog-title { color: var(--color-danger); }
         .app-dialog--info .app-dialog-title { color: var(--color-primary); }
+        .app-dialog--loading .app-dialog-title { color: var(--color-warning); }
+        .spinner-container {
+          display: flex;
+          justify-content: center;
+          padding: 1rem 0;
+        }
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          border-top-color: var(--color-primary);
+          animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
         .app-dialog-message {
           font-size: 0.9rem;
           color: var(--color-text-muted);
