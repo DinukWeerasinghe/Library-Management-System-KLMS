@@ -38,7 +38,10 @@ function runInit(wrappedDb) {
     ['school_logo', '', 'Base64 or path to school logo'],
     ['registration_fee', '0', 'Member registration fee'],
     ['exit_pin_enabled', '0', 'Enable Exit PIN Security'],
-    ['exit_pin', '1234', 'Application Exit PIN']
+    ['exit_pin', '1234', 'Application Exit PIN'],
+    ['lock_enabled', '0', 'Enable Session Auto Lock'],
+    ['lock_timeout_minutes', '5', 'Inactivity timeout in minutes'],
+    ['lock_pin', '1111', 'Session Lock PIN']
   ];
   defaultConfig.forEach(([k, v, d]) => {
     wrappedDb.prepare('INSERT OR IGNORE INTO Configuration (key, value, description) VALUES (?, ?, ?)').run(k, v, d);

@@ -143,6 +143,7 @@ app.whenReady().then(async () => {
     const { runMemberValidityMigration } = require('./database/migrate-member-validity');
     const { runBookBarcodeFillMigration } = require('./database/migrate-book-barcode-fill');
     const { runExitPinMigration } = require('./database/migrate-exit-pin');
+    const { runSessionLockMigration } = require('./database/migrate-session-lock');
 
     runMemberCodeMigration();
     runMemberBarcodeMigration();
@@ -150,6 +151,7 @@ app.whenReady().then(async () => {
     runMemberValidityMigration();
     await runBookBarcodeFillMigration();
     runExitPinMigration();
+    runSessionLockMigration();
 
     registerIpcHandlers();
     logger.info('IPC handlers registered.');
@@ -165,6 +167,12 @@ app.whenReady().then(async () => {
   ipcMain.handle('app:forceQuit', () => {
     app.isQuitting = true;
     app.quit();
+  });
+
+  ipcMain.handle('app:lock', () => {
+    if (mainWindow) {
+      mainWindow.webContents.send('app:showLockScreen');
+    }
   });
 });
 

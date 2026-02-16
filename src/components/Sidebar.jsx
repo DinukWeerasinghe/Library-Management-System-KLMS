@@ -7,7 +7,8 @@ import {
   LogOut,
   Library,
   UserCheck,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Lock
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { PermissionService } from '../services/PermissionService';
@@ -63,9 +64,19 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
             <span className={`role role-${session.role.toLowerCase()}`}>{session.role}</span>
           </div>
         </div>
-        <button onClick={onLogout} className="logout-btn" title="Logout">
-          <LogOut size={20} />
-        </button>
+        <div style={{ display: 'flex', gap: '0.25rem' }}>
+          <button
+            onClick={() => window.klms.lock()}
+            className="logout-btn"
+            title="Lock Session"
+            style={{ color: '#fbbf24' }}
+          >
+            <Lock size={18} />
+          </button>
+          <button onClick={onLogout} className="logout-btn" title="Logout">
+            <LogOut size={20} />
+          </button>
+        </div>
       </div>
 
       <style>{`

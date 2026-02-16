@@ -85,4 +85,6 @@ contextBridge.exposeInMainWorld('klms', {
   },
   quit: () => ipcRenderer.invoke('app:forceQuit'),
   onExitPinRequest: (callback) => ipcRenderer.on('app:requestExitPin', callback),
+  lock: () => ipcRenderer.invoke('app:lock'),
+  onShowLockScreen: (callback) => ipcRenderer.on('app:showLockScreen', callback),
 });

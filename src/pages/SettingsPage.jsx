@@ -324,6 +324,58 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         </section>
       )}
 
+      {/* Session Security Settings */}
+      <section className="settings-section">
+        <h3>Session Security</h3>
+        <p className="muted">Configure automatic and manual session locking.</p>
+        <div className="toggle-list">
+          <div className="toggle-row">
+            <span className="toggle-label">Enable Auto Lock</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={config.lock_enabled === '1'}
+              className={`toggle-switch ${config.lock_enabled === '1' ? 'on' : 'off'}`}
+              onClick={() => window.klms.config.set('lock_enabled', config.lock_enabled === '1' ? '0' : '1').then(() => setConfig(prev => ({ ...prev, lock_enabled: config.lock_enabled === '1' ? '0' : '1' })))}
+            >
+              <span className="toggle-slider" />
+            </button>
+          </div>
+        </div>
+
+        <div className="config-grid" style={{ marginTop: '1rem' }}>
+          <label>
+            Timeout (minutes)
+            <input
+              type="number"
+              min="1"
+              max="60"
+              value={config.lock_timeout_minutes || '5'}
+              onChange={(e) => handleConfigChange('lock_timeout_minutes', e.target.value)}
+            />
+          </label>
+          <label>
+            Lock PIN
+            <input
+              type="number"
+              pattern="[0-9]*"
+              inputMode="numeric"
+              placeholder="1111"
+              value={config.lock_pin || ''}
+              onChange={(e) => handleConfigChange('lock_pin', e.target.value)}
+            />
+          </label>
+        </div>
+        <button type="button" className="btn-primary" onClick={() => {
+          Promise.all([
+            window.klms.config.set('lock_timeout_minutes', config.lock_timeout_minutes),
+            window.klms.config.set('lock_pin', config.lock_pin)
+          ]).then(() => DialogService.showSuccess('Session security settings saved.'));
+        }}>
+          Save Session Settings
+        </button>
+      </section>
+
       {/* Change password */}
       <section className="settings-section">
         <h3>Change password</h3>
