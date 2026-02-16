@@ -150,6 +150,34 @@ function returnBookByAnyCode(scannedCode) {
 }
 
 /**
+ * Return a book using both member and book identifiers.
+ * @param {string} memberCode
+ * @param {string} bookCode
+ * @returns {object} Updated issue
+ */
+function returnBookByMemberAndBook(memberCode, bookCode) {
+  const db = getDatabase();
+
+  const member = memberService.getByCode(memberCode);
+  if (!member) throw new Error('Member not found with the scanned code');
+
+  const book = bookService.getBookByAnyCode(bookCode);
+  if (!book) throw new Error('Book not found with the scanned code');
+
+  const issue = db.prepare(`
+    SELECT id FROM Issue 
+    WHERE member_id = ? AND book_id = ? AND status = 'ISSUED'
+  `).get(member.id, book.id);
+
+  if (!issue) {
+    console.error(`Return failed: Member ${member.id} (${member.name}) does not have Book ${book.id} (${book.title}) issued.`);
+    throw new Error('This member does not have this book issued.');
+  }
+
+  return returnBook(issue.id);
+}
+
+/**
  * Renew an issue (extend due date by max_borrow_days).
  * @param {number} issueId
  * @returns {object} Updated issue
@@ -220,6 +248,7 @@ module.exports = {
   issueBook,
   returnBook,
   returnBookByAnyCode,
+  returnBookByMemberAndBook,
   renewBook,
   getIssueById,
   getAll,

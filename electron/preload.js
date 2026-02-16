@@ -40,6 +40,9 @@ contextBridge.exposeInMainWorld('klms', {
     returnBook: (issueId) => ipcRenderer.invoke('issues:returnBook', issueId),
     renewBook: (issueId) => ipcRenderer.invoke('issues:renewBook', issueId),
     returnBookByAnyCode: (code) => ipcRenderer.invoke('issues:returnBookByAnyCode', code),
+    returnBookByMemberAndBook: (memberCode, bookCode) =>
+      ipcRenderer.invoke('issues:returnBookByMemberAndBook', memberCode, bookCode),
+    getOverdue: () => ipcRenderer.invoke('issues:getOverdue'),
     getById: (id) => ipcRenderer.invoke('issues:getById', id),
     getAll: (filters) => ipcRenderer.invoke('issues:getAll', filters),
   },

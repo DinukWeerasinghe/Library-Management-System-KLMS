@@ -129,6 +129,9 @@ function registerIpcHandlers() {
   );
   ipcMain.handle('issues:renewBook', async (_, id) => issueService.renewBook(id));
   ipcMain.handle('issues:returnBookByAnyCode', async (_, code) => issueService.returnBookByAnyCode(code));
+  ipcMain.handle('issues:returnBookByMemberAndBook', async (_, memberCode, bookCode) =>
+    issueService.returnBookByMemberAndBook(memberCode, bookCode)
+  );
   ipcMain.handle('issues:getOverdue', async () => issueService.getOverdue());
   ipcMain.handle('issues:getById', async (_, id) => issueService.getIssueById(id));
   ipcMain.handle('issues:getAll', async (_, filters) =>
