@@ -187,7 +187,7 @@ export function Books({ features = {} }) {
                 <th>Title</th>
                 <th>Author</th>
                 <th>ID Codes</th>
-                <th>Internal Barcode</th>
+                <th>KLMS Barcode</th>
                 {showCategories && <th>Category</th>}
                 <th>Available</th>
                 <th>Actions</th>
@@ -228,16 +228,16 @@ export function Books({ features = {} }) {
         <div className="barcode-modal-overlay" onClick={() => setViewingBarcode(null)}>
           <div className="barcode-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>KLMS Book Barcode</h3>
+              <h3>KLMS Book Label</h3>
               <button className="close-btn" onClick={() => setViewingBarcode(null)}>×</button>
             </div>
             <div className="modal-body">
               <div className="barcode-id">{viewingBarcode.code}</div>
               <img src={viewingBarcode.image} alt="Barcode" className="barcode-img" />
-              <p className="barcode-hint">Use this for internal inventory and scanning</p>
+              <p className="barcode-hint">Affix this label to the back cover for easy scanning</p>
             </div>
             <div className="modal-actions">
-              <button onClick={() => window.print()} className="btn-primary">Print Barcode</button>
+              <button onClick={() => window.print()} className="btn-primary">Print Label</button>
             </div>
           </div>
         </div>

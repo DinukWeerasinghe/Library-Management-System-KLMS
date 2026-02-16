@@ -66,7 +66,12 @@ function create(data) {
   let finalExternalCode = external_code || null;
   let finalInternalCode = null;
 
-  if (!finalExternalCode && !isbn) {
+  if (!external_code && !isbn && !data.internal_code) {
+    finalInternalCode = generateBookCode();
+  } else if (data.internal_code) {
+    finalInternalCode = data.internal_code;
+  } else {
+    // ALWAYS generate an internal code for KLMS tracking/printing if one isn't provided
     finalInternalCode = generateBookCode();
   }
 
@@ -115,7 +120,7 @@ function update(id, data) {
 
   db.prepare(`
     UPDATE Book SET 
-      title=?, author=?, isbn=?, category_id=?, external_code=?, total_copies=?, available_copies=?, updated_at=datetime('now')
+      title=?, author=?, isbn=?, category_id=?, external_code=?, internal_code=COALESCE(?, internal_code), total_copies=?, available_copies=?, updated_at=datetime('now')
     WHERE id=?
   `).run(
     title ?? existing.title,
@@ -123,12 +128,23 @@ function update(id, data) {
     isbn !== undefined ? isbn : existing.isbn,
     useCategories && category_id !== undefined ? category_id : existing.category_id,
     external_code !== undefined ? external_code : existing.external_code,
+    data.internal_code || (existing.internal_code ? null : generateBookCode()),
     total,
     available,
     id
   );
 
-  return getById(id);
+  const updated = getById(id);
+  // If barcode is missing but internal_code exists, generate it
+  if (!updated.barcode_path && updated.internal_code) {
+    barcodeService.generateBarcode(updated.internal_code, 'book-codes').then(path => {
+      db.prepare('UPDATE Book SET barcode_path = ? WHERE id = ?').run(path, id);
+    }).catch(err => {
+      logger.error(`Deferred book barcode generation failed for existing book ${id}: `, err);
+    });
+  }
+
+  return updated;
 }
 
 function deleteBook(id) {
@@ -192,4 +208,5 @@ module.exports = {
   getBookByAnyCode,
   decreaseAvailableCopies,
   increaseAvailableCopies,
+  generateBookCode,
 };
