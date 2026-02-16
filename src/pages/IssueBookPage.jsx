@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
 
-/**
- * Issue Book (Lending) screen.
- * - Member dropdown, Book dropdown (available only), Issue button.
- * - Due date preview only if enable_due_date; borrow limit warning only if enable_borrow_limit.
- */
 export function IssueBookPage({ features = {}, config = {} }) {
   const [members, setMembers] = useState([]);
   const [books, setBooks] = useState([]);
@@ -18,8 +13,11 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const [scannedBook, setScannedBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [memberScanActive, setMemberScanActive] = useState(false);
-  const [bookScanActive, setBookScanActive] = useState(false);
+  const [memberScanning, setMemberScanning] = useState(false);
+  const [bookScanning, setBookScanning] = useState(false);
+
+  const memberInputRef = useRef(null);
+  const bookInputRef = useRef(null);
 
   const loadData = () => {
     setLoading(true);
@@ -41,7 +39,6 @@ export function IssueBookPage({ features = {}, config = {} }) {
 
   useScanDetection({
     onScanDetected: (code) => {
-      // Intelligently route the scanned code
       if (code.startsWith('KMV') || (code.startsWith('M') && code.length === 7)) {
         handleScanMember(code, true);
       } else {
@@ -52,45 +49,37 @@ export function IssueBookPage({ features = {}, config = {} }) {
 
   const handleScanMember = async (code, force = false) => {
     setScanMemberCode(code);
-    setMemberScanActive(code.length > 0);
-    const isSequential = code.startsWith('M') && code.length === 7;
-    const isTimestamp = code.startsWith('KMV') && code.length >= 17;
-
-    if (force || isSequential || isTimestamp) {
+    if (force || (code.startsWith('M') && code.length === 7) || (code.startsWith('KMV') && code.length >= 17)) {
+      setMemberScanning(true);
       try {
         const member = await window.klms.members.getByCode(code);
         if (member) {
           setScannedMember(member);
           setSelectedMemberId(member.id.toString());
+          // Auto focus book input after member identified
+          if (bookInputRef.current) bookInputRef.current.focus();
         } else {
           setScannedMember(null);
         }
       } catch (err) {
-        DialogService.showError('Scan failed: ' + err.message);
+        DialogService.showError('Member scan failed');
+      } finally {
+        setMemberScanning(false);
       }
-    } else if (code === '') {
-      setScannedMember(null);
-      setSelectedMemberId('');
     }
   };
 
   const handleManualMemberChange = (id) => {
     setSelectedMemberId(id);
-    if (!id) {
-      setScannedMember(null);
-      setScanMemberCode('');
-    } else {
-      const member = members.find(m => m.id.toString() === id.toString());
-      setScannedMember(member || null);
-      if (member) setScanMemberCode(member.member_code || '');
-    }
+    const member = members.find(m => m.id.toString() === id.toString());
+    setScannedMember(member || null);
+    if (member) setScanMemberCode(member.member_code || '');
   };
 
   const handleScanBook = async (code, force = false) => {
     setScanBookCode(code);
-    setBookScanActive(code.length > 0);
-
-    if (force || code.length >= 4) { // Minimally search codes like ISBN or internal BK...
+    if (force || (code.startsWith('B') && code.length === 7) || code.length >= 10) {
+      setBookScanning(true);
       try {
         const book = await window.klms.books.getByAnyCode(code);
         if (book) {
@@ -98,51 +87,38 @@ export function IssueBookPage({ features = {}, config = {} }) {
             setScannedBook(book);
             setSelectedBookId(book.id.toString());
           } else {
-            DialogService.showWarning('Book found but no copies available');
-            setScannedBook(null); // Or show a specific error
+            DialogService.showWarning(`"${book.title}" has no copies available.`);
+            setScannedBook(null);
           }
         } else {
           setScannedBook(null);
         }
       } catch (err) {
-        DialogService.showError('Book scan failed: ' + err.message);
+        DialogService.showError('Book scan failed');
+      } finally {
+        setBookScanning(false);
       }
-    } else if (code === '') {
-      setScannedBook(null);
-      setSelectedBookId('');
     }
   };
 
   const handleManualBookChange = (id) => {
     setSelectedBookId(id);
-    if (!id) {
-      setScannedBook(null);
-      setScanBookCode('');
-    } else {
-      const book = books.find(b => b.id.toString() === id.toString());
-      setScannedBook(book || null);
-      if (book) setScanBookCode(book.external_code || book.isbn || book.internal_code || '');
-    }
+    const book = books.find(b => b.id.toString() === id.toString());
+    setScannedBook(book || null);
+    if (book) setScanBookCode(book.internal_code || book.isbn || '');
   };
-
-  const availableBooks = books.filter((b) => b.available_copies > 0);
-  const maxBorrowDays = parseInt(config.max_borrow_days, 10) || 14;
-  const maxBooksPerMember = parseInt(config.max_books_per_member, 10) || 3;
-  const showDueDatePreview = Boolean(features.enable_due_date);
-  const showBorrowLimitWarning = Boolean(features.enable_borrow_limit);
 
   const handleIssue = async () => {
     const memberId = parseInt(selectedMemberId, 10);
     const bookId = parseInt(selectedBookId, 10);
-    if (!memberId || !bookId) {
-      DialogService.showError('Please select a member and a book');
-      return;
-    }
+    if (!memberId || !bookId) return;
 
     setSubmitting(true);
     try {
       await window.klms.issues.issueBook(memberId, bookId);
-      DialogService.showSuccess('Book issued successfully');
+      DialogService.showSuccess(`Issued "${scannedBook?.title}" to ${scannedMember?.name}`);
+
+      // Reset flow
       setSelectedMemberId('');
       setScanMemberCode('');
       setScannedMember(null);
@@ -150,787 +126,324 @@ export function IssueBookPage({ features = {}, config = {} }) {
       setScanBookCode('');
       setScannedBook(null);
       loadData();
+
+      if (memberInputRef.current) memberInputRef.current.focus();
     } catch (err) {
-      const msg = err.message || 'Issue failed';
-      if (msg.includes('not available')) {
-        DialogService.showError('Book not available');
-      } else if (msg.includes('Borrow limit exceeded')) {
-        DialogService.showError('Borrow limit exceeded');
-      } else {
-        DialogService.showError(msg);
-      }
+      DialogService.showError(err.message || 'Issuance failed');
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="issue-book-page">
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p>Loading members and books...</p>
-        </div>
-      </div>
-    );
-  }
+  const availableBooks = books.filter(b => b.available_copies > 0);
+  const maxBorrowDays = parseInt(config.max_borrow_days, 10) || 14;
+
+  if (loading) return <div className="page-loader">Initializing Terminal...</div>;
 
   return (
-    <div className="issue-book-page">
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="header-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-            <path d="M12 6v6"></path>
-            <path d="M9 9h6"></path>
-          </svg>
-        </div>
-        <div className="header-content">
-          <h2>Issue Book</h2>
-          <p className="subtitle">Lend a book to a library member</p>
-        </div>
-      </div>
+    <div className="issue-terminal">
+      <header className="terminal-header">
+        <div className="header-badge">LENDING MANAGEMENT</div>
+        <h1>Book Checkout</h1>
+        <div className="status-clock">{new Date().toLocaleDateString()}</div>
+      </header>
 
-      {/* Issue Form Card */}
-      <div className="issue-form-card">
-        {/* Member Scanning Section */}
-        <div className="scan-section">
-          <div className="section-header">
-            <div className="section-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-            </div>
-            <div>
-              <label>Member Identification</label>
-              <p className="section-hint">Scan member barcode or select manually</p>
-            </div>
-          </div>
+      <div className="terminal-grid">
+        {/* MEMBER COLUMN */}
+        <section className={`column member-column ${scannedMember ? 'identified' : ''}`}>
+          <div className="column-label">STEP 1: IDENTIFY MEMBER</div>
 
-          <div className="scan-input-wrapper">
-            <div className="scan-input-container">
-              <svg className="scan-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="3" y1="9" x2="21" y2="9"></line>
-                <line x1="3" y1="15" x2="21" y2="15"></line>
-              </svg>
+          <div className="input-group">
+            <div className="scan-field">
               <input
+                ref={memberInputRef}
                 type="text"
-                placeholder="Scan member ID (KMV...)"
+                placeholder="Scan Member ID Card"
                 value={scanMemberCode}
                 onChange={(e) => handleScanMember(e.target.value)}
-                className={`scan-input ${memberScanActive ? 'active' : ''}`}
                 autoFocus
               />
-              {scanMemberCode && (
-                <button
-                  type="button"
-                  className="clear-btn"
-                  onClick={() => {
-                    setScanMemberCode('');
-                    setScannedMember(null);
-                    setSelectedMemberId('');
-                    setMemberScanActive(false);
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              )}
             </div>
 
-            {scannedMember && (
-              <div className="scanned-result success-result">
-                <div className="result-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
+            <div className="manual-select">
+              <select value={selectedMemberId} onChange={(e) => handleManualMemberChange(e.target.value)}>
+                <option value="">Or Select Name manually...</option>
+                {members.map(m => (
+                  <option key={m.id} value={m.id}>{m.name} ({m.member_code})</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="identity-card">
+            {scannedMember ? (
+              <div className="card-content">
+                <div className="card-avatar">
+                  {scannedMember.name.charAt(0)}
                 </div>
-                <div className="result-content">
-                  <div className="result-name">{scannedMember.name}</div>
-                  <div className="result-meta">
-                    <span className="meta-badge">{scannedMember.member_type}</span>
-                    <span className="meta-code">{scannedMember.member_code}</span>
+                <div className="card-info">
+                  <div className="name-row">
+                    <span className="name">{scannedMember.name}</span>
+                    <span className="badge">{scannedMember.member_type}</span>
+                  </div>
+                  <div className="code">{scannedMember.member_code}</div>
+                  <div className="meta">
+                    <span>Active Borrowings: {scannedMember.active_issues || 0}</span>
+                    <span className={scannedMember.is_expired ? 'expired' : 'valid'}>
+                      {scannedMember.is_expired ? 'Membership Expired' : 'Membership Valid'}
+                    </span>
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="card-placeholder">Waiting for Member scan...</div>
             )}
           </div>
+        </section>
 
-          <div className="divider">
-            <span>OR</span>
-          </div>
+        {/* BOOK COLUMN */}
+        <section className={`column book-column ${scannedBook ? 'identified' : ''}`}>
+          <div className="column-label">STEP 2: IDENTIFY BOOK</div>
 
-          <div className="form-group">
-            <select
-              value={selectedMemberId}
-              onChange={(e) => handleManualMemberChange(e.target.value)}
-              disabled={submitting}
-              className="enhanced-select"
-            >
-              <option value="">Select member from list</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name} ({m.member_code || '–'})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {/* Book Scanning Section */}
-        <div className="scan-section">
-          <div className="section-header">
-            <div className="section-icon book-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
-            </div>
-            <div>
-              <label>Book Selection</label>
-              <p className="section-hint">Scan ISBN/barcode or select from available books</p>
-            </div>
-          </div>
-
-          <div className="scan-input-wrapper">
-            <div className="scan-input-container">
-              <svg className="scan-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="3" y1="9" x2="21" y2="9"></line>
-                <line x1="3" y1="15" x2="21" y2="15"></line>
-              </svg>
+          <div className="input-group">
+            <div className="scan-field">
               <input
+                ref={bookInputRef}
                 type="text"
-                placeholder="Scan book barcode or ISBN"
+                placeholder="Scan Book Barcode or ISBN"
                 value={scanBookCode}
                 onChange={(e) => handleScanBook(e.target.value)}
-                className={`scan-input ${bookScanActive ? 'active' : ''}`}
               />
-              {scanBookCode && (
-                <button
-                  type="button"
-                  className="clear-btn"
-                  onClick={() => {
-                    setScanBookCode('');
-                    setScannedBook(null);
-                    setSelectedBookId('');
-                    setBookScanActive(false);
-                  }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                  </svg>
-                </button>
-              )}
             </div>
 
-            {scannedBook && (
-              <div className="scanned-result success-result book-result">
-                <div className="result-icon">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
+            <div className="manual-select">
+              <select value={selectedBookId} onChange={(e) => handleManualBookChange(e.target.value)}>
+                <option value="">Or Select Title manually...</option>
+                {availableBooks.map(b => (
+                  <option key={b.id} value={b.id}>{b.title}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="identity-card">
+            {scannedBook ? (
+              <div className="card-content">
+                <div className="card-cover">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
                 </div>
-                <div className="result-content">
-                  <div className="result-name">{scannedBook.title}</div>
-                  <div className="result-meta">
-                    {scannedBook.author && <span className="meta-author">{scannedBook.author}</span>}
-                    <span className="meta-badge available">{scannedBook.available_copies} Available</span>
+                <div className="card-info">
+                  <div className="name-row">
+                    <span className="name">{scannedBook.title}</span>
+                  </div>
+                  <div className="author">By {scannedBook.author || 'Unknown Author'}</div>
+                  <div className="meta">
+                    <span className="badge">{scannedBook.category || 'General'}</span>
+                    <span className="copies">{scannedBook.available_copies} Copies Available</span>
                   </div>
                 </div>
               </div>
+            ) : (
+              <div className="card-placeholder">Waiting for Book scan...</div>
             )}
           </div>
+        </section>
+      </div>
 
-          <div className="divider">
-            <span>OR</span>
+      <footer className="terminal-footer">
+        <div className="lending-info">
+          <div className="info-item">
+            <label>BORROWING PERIOD</label>
+            <span>{maxBorrowDays} DAYS</span>
           </div>
-
-          <div className="form-group">
-            <select
-              value={selectedBookId}
-              onChange={(e) => handleManualBookChange(e.target.value)}
-              disabled={submitting}
-              className="enhanced-select"
-            >
-              <option value="">Select book from available list</option>
-              {availableBooks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.title} ({b.author || 'No Author'}) - {b.available_copies} available
-                </option>
-              ))}
-            </select>
-            {availableBooks.length === 0 && (
-              <div className="empty-state">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                  <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                  <line x1="18" y1="6" x2="6" y2="18"></line>
-                  <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-                <p>No books available to issue</p>
-              </div>
-            )}
+          <div className="info-item">
+            <label>RETURN BY</label>
+            <span>{new Date(Date.now() + maxBorrowDays * 86400000).toLocaleDateString()}</span>
           </div>
         </div>
 
-        {/* Info Section */}
-        {(showDueDatePreview || showBorrowLimitWarning) && (
-          <div className="info-section">
-            {showDueDatePreview && (
-              <div className="info-card due-date">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <div>
-                  <strong>Due Date</strong>
-                  <p>Book must be returned within <strong>{maxBorrowDays} days</strong></p>
-                </div>
-              </div>
-            )}
-
-            {showBorrowLimitWarning && (
-              <div className="info-card borrow-limit">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                  <line x1="12" y1="9" x2="12" y2="13"></line>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                <div>
-                  <strong>Borrow Limit</strong>
-                  <p>Maximum <strong>{config.max_books_per_member || 5} books</strong> per member</p>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Issue Button */}
         <button
-          type="button"
-          className="btn-issue"
+          className="btn-execute"
+          disabled={!selectedMemberId || !selectedBookId || submitting}
           onClick={handleIssue}
-          disabled={submitting || !selectedMemberId || !selectedBookId}
         >
-          {submitting ? (
-            <>
-              <span className="btn-spinner"></span>
-              Processing...
-            </>
-          ) : (
-            <>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-                <polyline points="9 11 12 14 15 11"></polyline>
-                <line x1="12" y1="14" x2="12" y2="6"></line>
-              </svg>
-              Issue Book to Member
-            </>
-          )}
+          {submitting ? 'PROCESSING...' : 'ISSUE BOOK'}
         </button>
-      </div>
+      </footer>
 
       <style>{`
-        .issue-book-page {
-          max-width: 680px;
-          margin: 0 auto;
-          animation: fadeIn 0.3s ease-in;
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Loading State */
-        .loading-container {
+        .issue-terminal {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 4rem 2rem;
-          text-align: center;
+          height: calc(100vh - 100px);
+          max-height: 800px;
+          gap: 1.5rem;
+          color: var(--color-text);
+          font-family: var(--font-sans);
         }
 
-        .loading-spinner {
-          width: 48px;
-          height: 48px;
-          border: 4px solid var(--color-border);
-          border-top-color: var(--button-color);
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-          margin-bottom: 1rem;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        .loading-container p {
-          color: var(--color-text-muted);
-          font-size: 0.95rem;
-        }
-
-        /* Page Header */
-        .page-header {
+        .terminal-header {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          margin-bottom: 2rem;
-          padding: 1.5rem;
+          justify-content: space-between;
+          border-bottom: 1px solid var(--color-border);
+          padding-bottom: 1rem;
+        }
+
+        .terminal-header h1 { margin: 0; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; }
+        .header-badge { font-family: monospace; font-size: 0.7rem; background: var(--button-color); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; }
+        .status-clock { color: var(--color-text-muted); font-size: 0.9rem; font-weight: 600; }
+
+        .terminal-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.5rem;
+          flex: 1;
+        }
+
+        .column {
           background: var(--color-surface);
           border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+          border-radius: 1.25rem;
+          padding: 1.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .header-icon {
+        .column.identified { border-color: var(--button-color); box-shadow: 0 0 20px rgba(var(--button-color-rgb, 79, 70, 229), 0.1); }
+
+        .column-label {
+          font-family: monospace;
+          font-size: 0.75rem;
+          color: var(--color-text-muted);
+          letter-spacing: 0.1em;
+        }
+
+        .input-group { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        .scan-field { position: relative; }
+        .scan-field input {
+          width: 100%;
+          background: var(--color-bg);
+          border: 2px solid var(--color-border);
+          border-radius: 0.75rem;
+          padding: 1rem 1.25rem;
+          font-size: 1.1rem;
+          font-family: monospace;
+          color: var(--color-text);
+          transition: border-color 0.2s;
+        }
+        .scan-field input:focus { border-color: var(--button-color); outline: none; }
+
+        .scanner-line {
+          position: absolute;
+          bottom: 0;
+          left: 5%;
+          width: 90%;
+          height: 2px;
+          background: var(--button-color);
+          box-shadow: 0 0 8px var(--button-color);
+          animation: scanMove 2s infinite ease-in-out;
+        }
+
+        @keyframes scanMove { 0%, 100% { transform: translateY(-5px); opacity: 0; } 50% { transform: translateY(-40px); opacity: 1; } }
+
+        .manual-select select {
+          width: 100%;
+          background: transparent;
+          border: 1px solid var(--color-border);
+          color: var(--color-text-muted);
+          padding: 0.5rem;
+          border-radius: 0.5rem;
+          font-size: 0.8rem;
+          cursor: pointer;
+        }
+
+        .identity-card {
+          flex: 1;
+          background: var(--color-bg);
+          border-radius: 1rem;
+          border: 1px dashed var(--color-border);
           display: flex;
           align-items: center;
           justify-content: center;
-          width: 56px;
-          height: 56px;
-          background: linear-gradient(135deg, var(--button-color), var(--button-hover-color));
-          color: var(--header-text-color);
-          border-radius: var(--radius-lg);
-          flex-shrink: 0;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          overflow: hidden;
         }
 
-        .header-content h2 {
+        .card-placeholder { color: var(--color-text-muted); font-size: 0.8rem; letter-spacing: 0.05em; font-family: monospace; }
+
+        .card-content {
+          width: 100%;
+          padding: 1.25rem;
+          display: flex;
+          gap: 1.25rem;
+          animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .card-avatar, .card-cover {
+          width: 64px;
+          height: 64px;
+          background: var(--button-color);
+          border-radius: 0.75rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           font-size: 1.5rem;
           font-weight: 700;
-          color: var(--color-text);
-          margin: 0 0 0.25rem 0;
-        }
-
-        .subtitle {
-          color: var(--color-text-muted);
-          font-size: 0.9rem;
-          margin: 0;
-        }
-
-        /* Form Card */
-        .issue-form-card {
-          background: var(--color-surface);
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          padding: 2rem;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        /* Scan Section */
-        .scan-section {
-          margin-bottom: 2rem;
-          padding-bottom: 2rem;
-          border-bottom: 1px solid var(--color-border);
-        }
-
-        .scan-section:last-of-type {
-          border-bottom: none;
-        }
-
-        .section-header {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-          margin-bottom: 1.25rem;
-        }
-
-        .section-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          background: rgba(var(--button-color-rgb, 59, 130, 246), 0.1);
-          color: var(--button-color);
-          border-radius: var(--radius);
-          flex-shrink: 0;
-        }
-
-        .section-icon.book-icon {
-          background: rgba(139, 92, 246, 0.1);
-          color: #8b5cf6;
-        }
-
-        .section-header label {
-          font-size: 1rem;
-          font-weight: 600;
-          color: var(--color-text);
-          margin: 0 0 0.25rem 0;
-          display: block;
-        }
-
-        .section-hint {
-          font-size: 0.85rem;
-          color: var(--color-text-muted);
-          margin: 0;
-        }
-
-        /* Scan Input */
-        .scan-input-wrapper {
-          margin-bottom: 1rem;
-        }
-
-        .scan-input-container {
-          position: relative;
-          display: flex;
-          align-items: center;
-        }
-
-        .scan-icon {
-          position: absolute;
-          left: 1rem;
-          color: var(--color-text-muted);
-          pointer-events: none;
-          z-index: 1;
-        }
-
-        .scan-input {
-          width: 100%;
-          padding: 0.875rem 1rem 0.875rem 3rem;
-          border: 2px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          background: var(--color-bg);
-          color: var(--color-text);
-          font-family: 'Courier New', monospace;
-          font-size: 1rem;
-          transition: all 0.2s;
-        }
-
-        .scan-input:focus {
-          border-color: var(--button-color);
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(var(--button-color-rgb, 59, 130, 246), 0.1);
-        }
-
-        .scan-input.active {
-          border-color: var(--button-color);
-          background: rgba(var(--button-color-rgb, 59, 130, 246), 0.03);
-        }
-
-        .clear-btn {
-          position: absolute;
-          right: 0.75rem;
-          background: var(--color-border);
-          border: none;
-          border-radius: 50%;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          color: var(--color-text-muted);
-          transition: all 0.2s;
-        }
-
-        .clear-btn:hover {
-          background: var(--color-text-muted);
-          color: var(--color-surface);
-        }
-
-        /* Scanned Result */
-        .scanned-result {
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-          padding: 1rem;
-          background: var(--color-bg);
-          border-radius: var(--radius-lg);
-          margin-top: 0.75rem;
-          border: 2px solid transparent;
-          animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .success-result {
-          border-color: #10b981;
-          background: rgba(16, 185, 129, 0.05);
-        }
-
-        .book-result {
-          border-color: #8b5cf6;
-          background: rgba(139, 92, 246, 0.05);
-        }
-
-        .result-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 40px;
-          height: 40px;
-          background: #10b981;
           color: white;
-          border-radius: 50%;
           flex-shrink: 0;
         }
 
-        .book-result .result-icon {
-          background: #8b5cf6;
-        }
+        .card-cover { background: rgba(var(--button-color-rgb, 79, 70, 229), 0.1); color: var(--button-color); }
+        .card-cover svg { width: 32px; height: 32px; }
 
-        .result-content {
-          flex: 1;
-          min-width: 0;
-        }
+        .card-info { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+        .name-row { display: flex; align-items: center; gap: 0.5rem; }
+        .name { font-weight: 700; font-size: 1.1rem; }
+        .card-info .badge { font-size: 0.7rem; background: var(--color-border); padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; }
+        .card-info .code { font-family: monospace; color: var(--button-color); font-size: 0.9rem; }
+        .card-info .meta { margin-top: 0.5rem; display: flex; gap: 1rem; font-size: 0.75rem; font-weight: 600; color: var(--color-text-muted); }
+        .card-info .author { font-size: 0.9rem; color: var(--color-text-muted); }
 
-        .result-name {
-          font-weight: 600;
-          font-size: 1rem;
-          color: var(--color-text);
-          margin-bottom: 0.35rem;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
+        .valid { color: var(--color-success); }
+        .expired { color: var(--color-danger); }
 
-        .result-meta {
+        .terminal-footer {
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          border-radius: 1.25rem;
+          padding: 1.25rem 2rem;
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          flex-wrap: wrap;
+          justify-content: space-between;
         }
 
-        .meta-badge {
-          font-size: 0.75rem;
-          background: rgba(16, 185, 129, 0.15);
-          color: #059669;
-          padding: 0.15rem 0.6rem;
-          border-radius: 100px;
-          text-transform: uppercase;
-          font-weight: 600;
-        }
+        .lending-info { display: flex; gap: 3rem; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-item label { font-size: 0.65rem; color: var(--color-text-muted); font-family: monospace; letter-spacing: 0.1em; }
+        .info-item span { font-weight: 700; font-size: 1.1rem; }
 
-        .meta-badge.available {
-          background: rgba(139, 92, 246, 0.15);
-          color: #7c3aed;
-        }
-
-        .meta-code,
-        .meta-author {
-          font-size: 0.8rem;
-          color: var(--color-text-muted);
-        }
-
-        /* Divider */
-        .divider {
-          position: relative;
-          text-align: center;
-          margin: 1.5rem 0;
-        }
-
-        .divider::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: var(--color-border);
-        }
-
-        .divider span {
-          position: relative;
-          display: inline-block;
-          padding: 0 1rem;
-          background: var(--color-surface);
-          color: var(--color-text-muted);
-          font-size: 0.75rem;
-          font-weight: 600;
+        .btn-execute {
+          background: var(--button-color);
+          color: white;
+          padding: 1rem 2.5rem;
+          border-radius: 0.75rem;
+          font-weight: 800;
+          font-size: 1rem;
           letter-spacing: 0.05em;
-        }
-
-        /* Form Group */
-        .form-group {
-          margin-bottom: 1rem;
-        }
-
-        .enhanced-select {
-          width: 100%;
-          padding: 0.75rem 1rem;
-          border: 2px solid var(--color-border);
-          border-radius: var(--radius-lg);
-          background: var(--color-bg);
-          color: var(--color-text);
-          font-size: 0.95rem;
-          cursor: pointer;
+          box-shadow: 0 4px 15px rgba(var(--button-color-rgb, 79, 70, 229), 0.3);
           transition: all 0.2s;
         }
+        .btn-execute:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-execute:disabled { opacity: 0.5; filter: grayscale(1); }
 
-        .enhanced-select:focus {
-          outline: none;
-          border-color: var(--button-color);
-          box-shadow: 0 0 0 3px rgba(var(--button-color-rgb, 59, 130, 246), 0.1);
-        }
-
-        .enhanced-select:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-
-        /* Empty State */
-        .empty-state {
-          text-align: center;
-          padding: 2rem 1rem;
-          color: var(--color-text-muted);
-        }
-
-        .empty-state svg {
-          opacity: 0.3;
-          margin-bottom: 0.75rem;
-        }
-
-        .empty-state p {
-          font-size: 0.9rem;
-          margin: 0;
-        }
-
-        /* Info Section */
-        .info-section {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-          margin-bottom: 1.5rem;
-          padding: 1.25rem;
-          background: var(--color-bg);
-          border-radius: var(--radius-lg);
-          border: 1px solid var(--color-border);
-        }
-
-        .info-card {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-        }
-
-        .info-card svg {
-          flex-shrink: 0;
-          margin-top: 0.15rem;
-        }
-
-        .info-card.due-date svg {
-          color: #3b82f6;
-        }
-
-        .info-card.borrow-limit svg {
-          color: #f59e0b;
-        }
-
-        .info-card strong {
-          display: block;
-          font-size: 0.875rem;
-          color: var(--color-text);
-          margin-bottom: 0.25rem;
-        }
-
-        .info-card p {
-          font-size: 0.85rem;
-          color: var(--color-text-muted);
-          margin: 0;
-        }
-
-        /* Issue Button */
-        .btn-issue {
-          width: 100%;
-          padding: 1rem;
-          background: var(--button-color);
-          color: var(--header-text-color);
-          border: none;
-          border-radius: var(--radius-lg);
-          font-weight: 600;
-          font-size: 1rem;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          transition: all 0.3s;
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .btn-issue:hover:not(:disabled) {
-          background: var(--button-hover-color);
-          transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-        }
-
-        .btn-issue:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .btn-issue:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          transform: none;
-        }
-
-        .btn-spinner {
-          width: 18px;
-          height: 18px;
-          border: 2px solid var(--header-text-color);
-          border-top-color: transparent;
-          border-radius: 50%;
-          animation: spin 0.6s linear infinite;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-          .issue-book-page {
-            max-width: 100%;
-          }
-
-          .page-header {
-            padding: 1.25rem;
-          }
-
-          .header-icon {
-            width: 48px;
-            height: 48px;
-          }
-
-          .header-icon svg {
-            width: 24px;
-            height: 24px;
-          }
-
-          .header-content h2 {
-            font-size: 1.25rem;
-          }
-
-          .issue-form-card {
-            padding: 1.5rem;
-          }
-
-          .section-header {
-            flex-direction: row;
-            align-items: flex-start;
-          }
-
-          .section-icon {
-            width: 36px;
-            height: 36px;
-          }
+        @media (max-width: 900px) {
+          .terminal-grid { grid-template-columns: 1fr; }
+          .issue-terminal { height: auto; max-height: none; }
         }
       `}</style>
     </div>

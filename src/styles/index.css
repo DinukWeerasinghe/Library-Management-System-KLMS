@@ -28,7 +28,7 @@
   /* Gray 900 */
   --btn-primary-bg: var(--color-primary);
   --header-text: #ffffff;
-  
+
   /* Compatibility variables for KLMS Dynamic Theme Engine */
   --primary-color: var(--color-primary);
   --secondary-color: var(--color-secondary);
@@ -39,11 +39,11 @@
   --header-text-color: var(--header-text);
 
   /* helpers used by components for overlays and light primary tints */
-  --overlay-color: rgba(0,0,0,0.7);
-  --overlay-light: rgba(0,0,0,0.1);
+  --overlay-color: rgba(0, 0, 0, 0.7);
+  --overlay-light: rgba(0, 0, 0, 0.1);
   --primary-color-light: var(--color-primary-light);
 
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   --radius-sm: 4px;
   --radius: 8px;
