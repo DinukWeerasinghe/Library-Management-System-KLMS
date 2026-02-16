@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDialog } from '../components/AppDialog';
+import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
 
 /**
@@ -18,12 +18,8 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const [scannedBook, setScannedBook] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
   const [memberScanActive, setMemberScanActive] = useState(false);
   const [bookScanActive, setBookScanActive] = useState(false);
-
-  const showDialog = (type, message) => setDialog({ open: true, type, message });
-  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
 
   const loadData = () => {
     setLoading(true);
@@ -35,7 +31,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
         setMembers(m);
         setBooks(b);
       })
-      .catch(() => showDialog('error', 'Failed to load data'))
+      .catch(() => DialogService.showError('Failed to load data'))
       .finally(() => setLoading(false));
   };
 
@@ -68,7 +64,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
           setScannedMember(null);
         }
       } catch (err) {
-        console.error('Scan failed:', err);
+        DialogService.showError('Scan failed: ' + err.message);
       }
     } else if (code === '') {
       setScannedMember(null);
@@ -100,14 +96,14 @@ export function IssueBookPage({ features = {}, config = {} }) {
             setScannedBook(book);
             setSelectedBookId(book.id.toString());
           } else {
-            console.warn('Book found but no copies available');
+            DialogService.showWarning('Book found but no copies available');
             setScannedBook(null); // Or show a specific error
           }
         } else {
           setScannedBook(null);
         }
       } catch (err) {
-        console.error('Book scan failed:', err);
+        DialogService.showError('Book scan failed: ' + err.message);
       }
     } else if (code === '') {
       setScannedBook(null);
@@ -137,14 +133,14 @@ export function IssueBookPage({ features = {}, config = {} }) {
     const memberId = parseInt(selectedMemberId, 10);
     const bookId = parseInt(selectedBookId, 10);
     if (!memberId || !bookId) {
-      showDialog('error', 'Please select a member and a book');
+      DialogService.showError('Please select a member and a book');
       return;
     }
 
     setSubmitting(true);
     try {
       await window.klms.issues.issueBook(memberId, bookId);
-      showDialog('success', 'Book issued successfully');
+      DialogService.showSuccess('Book issued successfully');
       setSelectedMemberId('');
       setScanMemberCode('');
       setScannedMember(null);
@@ -155,11 +151,11 @@ export function IssueBookPage({ features = {}, config = {} }) {
     } catch (err) {
       const msg = err.message || 'Issue failed';
       if (msg.includes('not available')) {
-        showDialog('error', 'Book not available');
+        DialogService.showError('Book not available');
       } else if (msg.includes('Borrow limit exceeded')) {
-        showDialog('error', 'Borrow limit exceeded');
+        DialogService.showError('Borrow limit exceeded');
       } else {
-        showDialog('error', msg);
+        DialogService.showError(msg);
       }
     } finally {
       setSubmitting(false);
@@ -408,7 +404,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
                 </svg>
                 <div>
                   <strong>Borrow Limit</strong>
-                  <p>Maximum <strong>{maxBooksPerMember} books</strong> per member</p>
+                  <p>Maximum <strong>{config.max_books_per_member || 5} books</strong> per member</p>
                 </div>
               </div>
             )}
@@ -440,13 +436,6 @@ export function IssueBookPage({ features = {}, config = {} }) {
           )}
         </button>
       </div>
-
-      <AppDialog
-        open={dialog.open}
-        type={dialog.type}
-        message={dialog.message}
-        onClose={closeDialog}
-      />
 
       <style>{`
         .issue-book-page {

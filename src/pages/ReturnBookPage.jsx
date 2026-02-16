@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDialog } from '../components/AppDialog';
+import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
 
 /**
@@ -10,7 +10,6 @@ import { useScanDetection } from '../hooks/useScanDetection';
 export function ReturnBookPage({ features = {} }) {
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
   const [returningId, setReturningId] = useState(null);
   const [renewingId, setRenewingId] = useState(null);
   const [scanCode, setScanCode] = useState('');
@@ -19,15 +18,12 @@ export function ReturnBookPage({ features = {} }) {
   const showRenew = Boolean(features.enable_renewal);
   const showFine = Boolean(features.enable_fine);
 
-  const showDialog = (type, message) => setDialog({ open: true, type, message });
-  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
-
   const loadIssued = () => {
     setLoading(true);
     window.klms.issues
       .getAll({ status: 'ISSUED' })
       .then(setIssues)
-      .catch(() => showDialog('error', 'Failed to load issued books'))
+      .catch(() => DialogService.showError('Failed to load issued books'))
       .finally(() => setLoading(false));
   };
 
@@ -46,13 +42,13 @@ export function ReturnBookPage({ features = {} }) {
     try {
       const issue = await window.klms.issues.returnBook(issueId);
       if (showFine && issue.fine_amount > 0) {
-        showDialog('info', `Book returned successfully. Fine amount: ${issue.fine_amount}`);
+        DialogService.showInfo(`Book returned successfully. Fine amount: ${issue.fine_amount}`);
       } else {
-        showDialog('success', 'Book returned successfully');
+        DialogService.showSuccess('Book returned successfully');
       }
       loadIssued();
     } catch (err) {
-      showDialog('error', err.message || 'Return failed');
+      DialogService.showError(err.message || 'Return failed');
     } finally {
       setReturningId(null);
     }
@@ -63,10 +59,10 @@ export function ReturnBookPage({ features = {} }) {
     setRenewingId(issueId);
     try {
       await window.klms.issues.renewBook(issueId);
-      showDialog('success', 'Due date extended successfully');
+      DialogService.showSuccess('Due date extended successfully');
       loadIssued();
     } catch (err) {
-      showDialog('error', err.message || 'Renew failed');
+      DialogService.showError(err.message || 'Renew failed');
     } finally {
       setRenewingId(null);
     }
@@ -91,121 +87,117 @@ export function ReturnBookPage({ features = {} }) {
       setScanCode('');
       loadIssued();
     } catch (err) {
-      showDialog('error', err.message || 'Scan return failed');
+      DialogService.showError(err.message || 'Scan return failed');
     } finally {
       setScanning(false);
     }
   };
 
   return (
-    <div className="return-book-page">
-      <h2>Return Book</h2>
-      <p className="subtitle">View issued books and process returns</p>
+    <>
+      <div className="return-book-page">
+        <h2>Return Book</h2>
+        <p className="subtitle">View issued books and process returns</p>
 
-      <div className="scan-return-card">
-        <div className="form-group">
-          <label>Scan Book to Return</label>
-          <div className="scan-input-wrapper">
-            <input
-              type="text"
-              placeholder="Scan ISBN, Publisher Barcode or KLMS Code..."
-              value={scanCode}
-              onChange={(e) => handleScan(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && processScan(scanCode)}
-              className="scan-input"
-              autoFocus
-              disabled={scanning}
-            />
-            {scanning && <span className="scanning-loader">Processing...</span>}
+        <div className="scan-return-card">
+          <div className="form-group">
+            <label>Scan Book to Return</label>
+            <div className="scan-input-wrapper">
+              <input
+                type="text"
+                placeholder="Scan ISBN, Publisher Barcode or KLMS Code..."
+                value={scanCode}
+                onChange={(e) => handleScan(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && processScan(scanCode)}
+                className="scan-input"
+                autoFocus
+                disabled={scanning}
+              />
+              {scanning && <span className="scanning-loader">Processing...</span>}
+            </div>
+            <p className="help-text">System supports ISBN, Publisher Barcodes, and KLMS Internal Codes.</p>
           </div>
-          <p className="help-text">System supports ISBN, Publisher Barcodes, and KLMS Internal Codes.</p>
         </div>
-      </div>
 
-      {lastReturn && (
-        <div className="return-success-card">
-          <div className="success-header">
-            <span className="success-icon">✓</span>
-            <div>
-              <h3>Book Returned Successfully</h3>
-              <p className="success-date">{new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</p>
+        {lastReturn && (
+          <div className="return-success-card">
+            <div className="success-header">
+              <span className="success-icon">✓</span>
+              <div>
+                <h3>Book Returned Successfully</h3>
+                <p className="success-date">{new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}</p>
+              </div>
             </div>
+            <div className="success-details">
+              <div className="detail-item">
+                <span className="detail-label">Book Title</span>
+                <span className="detail-value">{lastReturn.book_title}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Member Name</span>
+                <span className="detail-value">{lastReturn.member_name}</span>
+              </div>
+              <div className="detail-item">
+                <span className="detail-label">Fine Amount</span>
+                <span className="detail-value fine">{lastReturn.fine_amount > 0 ? `LKR ${lastReturn.fine_amount.toFixed(2)}` : 'No Fine'}</span>
+              </div>
+            </div>
+            <button className="btn-close-success" onClick={() => setLastReturn(null)}>Dismiss</button>
           </div>
-          <div className="success-details">
-            <div className="detail-item">
-              <span className="detail-label">Book Title</span>
-              <span className="detail-value">{lastReturn.book_title}</span>
-            </div>
-            <div className="detail-item">
-              <span className="detail-label">Member Name</span>
-              <span className="detail-value">{lastReturn.member_name}</span>
-            </div>
-            <div className="detail-item">
-              <span className="detail-label">Fine Amount</span>
-              <span className="detail-value fine">{lastReturn.fine_amount > 0 ? `LKR ${lastReturn.fine_amount.toFixed(2)}` : 'No Fine'}</span>
-            </div>
-          </div>
-          <button className="btn-close-success" onClick={() => setLastReturn(null)}>Dismiss</button>
-        </div>
-      )}
+        )}
 
-      <div className="issued-list-card">
-        <h3>Currently Issued Books</h3>
-        {loading ? (
-          <p>Loading...</p>
-        ) : issues.length === 0 ? (
-          <p className="empty">No books currently issued.</p>
-        ) : (
-          <table className="issued-table">
-            <thead>
-              <tr>
-                <th>Member Name</th>
-                <th>Book Title</th>
-                <th>Issue Date</th>
-                <th>Due Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {issues.map((i) => (
-                <tr key={i.id}>
-                  <td>{i.member_name} ({i.member_type})</td>
-                  <td>{i.book_title}</td>
-                  <td>{i.issue_date}</td>
-                  <td>{i.due_date || '–'}</td>
-                  <td className="actions">
-                    <button
-                      type="button"
-                      className="btn-return"
-                      onClick={() => handleReturn(i.id)}
-                      disabled={returningId !== null}
-                    >
-                      {returningId === i.id ? 'Returning...' : 'Return'}
-                    </button>
-                    {showRenew && (
+        <div className="issued-list-card">
+          <h3>Currently Issued Books</h3>
+          {loading ? (
+            <p>Loading...</p>
+          ) : issues.length === 0 ? (
+            <p className="empty">No books currently issued.</p>
+          ) : (
+            <table className="issued-table">
+              <thead>
+                <tr>
+                  <th>Member Name</th>
+                  <th>Book Title</th>
+                  <th>Issue Date</th>
+                  <th>Due Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {issues.map((i) => (
+                  <tr key={i.id}>
+                    <td>{i.member_name} ({i.member_type})</td>
+                    <td>{i.book_title}</td>
+                    <td>{i.issue_date}</td>
+                    <td>{i.due_date || '–'}</td>
+                    <td className="actions">
                       <button
                         type="button"
-                        className="btn-renew"
-                        onClick={() => handleRenew(i.id)}
-                        disabled={renewingId !== null}
+                        className="btn-return"
+                        onClick={() => handleReturn(i.id)}
+                        disabled={returningId !== null}
                       >
-                        {renewingId === i.id ? 'Renewing...' : 'Renew'}
+                        {returningId === i.id ? 'Returning...' : 'Return'}
                       </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                      {showRenew && (
+                        <button
+                          type="button"
+                          className="btn-renew"
+                          onClick={() => handleRenew(i.id)}
+                          disabled={renewingId !== null}
+                        >
+                          {renewingId === i.id ? 'Renewing...' : 'Renew'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-      <AppDialog
-        open={dialog.open}
-        type={dialog.type}
-        message={dialog.message}
-        onClose={closeDialog}
-      />
+      </div>
 
       <style>{`
         .return-book-page { }
@@ -321,6 +313,6 @@ export function ReturnBookPage({ features = {} }) {
         }
         .btn-close-success:hover { background: #10b981; color: white; }
       `}</style>
-    </div>
+    </>
   );
 }

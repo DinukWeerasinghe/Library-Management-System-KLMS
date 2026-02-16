@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Logo } from '../components/Logo';
+import { DialogService } from '../services/DialogService';
 
 export function Login({ onSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [capsLockOn, setCapsLockOn] = useState(false);
@@ -49,7 +49,7 @@ export function Login({ onSuccess }) {
         setPublicData(overdue);
       }
     } catch (err) {
-      console.error('Public view failed:', err);
+      DialogService.showError('Public view failed: ' + err.message);
     } finally {
       setPublicLoading(false);
     }
@@ -72,7 +72,6 @@ export function Login({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -91,10 +90,10 @@ export function Login({ onSuccess }) {
       if (result.success) {
         onSuccess(result);
       } else {
-        setError(result.error || 'Invalid username or password');
+        DialogService.showError(result.error || 'Invalid username or password');
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please try again.');
+      DialogService.showError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -246,7 +245,7 @@ export function Login({ onSuccess }) {
                 required
                 autoFocus
                 disabled={loading}
-                aria-describedby={error ? 'login-error' : undefined}
+                aria-describedby={undefined}
               />
             </div>
 
@@ -269,7 +268,7 @@ export function Login({ onSuccess }) {
                   placeholder="Enter your password"
                   required
                   disabled={loading}
-                  aria-describedby={error ? 'login-error' : undefined}
+                  aria-describedby={undefined}
                 />
                 <button
                   type="button"
@@ -316,16 +315,6 @@ export function Login({ onSuccess }) {
               </label>
             </div>
 
-            {error && (
-              <div className="login-error" id="login-error" role="alert">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-                {error}
-              </div>
-            )}
 
             <button
               type="submit"

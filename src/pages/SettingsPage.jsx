@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDialog } from '../components/AppDialog';
+import { DialogService } from '../services/DialogService';
 
 const FEATURE_KEYS = [
   { key: 'enable_fine', label: 'Enable fine calculation' },
@@ -34,13 +34,9 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
   const [features, setFeatures] = useState(propFeatures || {});
   const [theme, setTheme] = useState({});
   const [loading, setLoading] = useState(true);
-  const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
 
   const isAdmin = session?.role === 'ADMIN';
-
-  const showDialog = (type, message) => setDialog({ open: true, type, message });
-  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
 
   useEffect(() => {
     setFeatures(propFeatures || {});
@@ -58,7 +54,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         setTheme(t || {});
         if (onFeaturesChange) onFeaturesChange(f);
       })
-      .catch(() => showDialog('error', 'Failed to load settings'))
+      .catch(() => DialogService.showError('Failed to load settings'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -82,7 +78,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
     try {
       await window.klms.features.set(key, enabled);
     } catch (err) {
-      showDialog('error', err.message || 'Failed to update feature');
+      DialogService.showError(err.message || 'Failed to update feature');
       setFeatures(features);
       if (onFeaturesChange) onFeaturesChange(features);
     }
@@ -99,9 +95,9 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           await window.klms.config.set(key, String(config[key]).trim());
         }
       }
-      showDialog('success', 'Configuration saved.');
+      DialogService.showSuccess('Configuration saved.');
     } catch (err) {
-      showDialog('error', err.message || 'Failed to save configuration');
+      DialogService.showError(err.message || 'Failed to save configuration');
     }
   };
 
@@ -131,7 +127,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         }
       }
       window.klms.log.info('All branding settings sent to main process.');
-      showDialog('success', 'Branding settings saved.');
+      DialogService.showSuccess('Branding settings saved.');
       // Apply branding without reload: dispatch event so renderer components update live
       try {
         const brandingDetail = {
@@ -144,7 +140,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       }
     } catch (err) {
       window.klms.log.error(`Branding save FAILED: ${err.message}`);
-      showDialog('error', err.message || 'Failed to save branding');
+      DialogService.showError(err.message || 'Failed to save branding');
     }
   };
 
@@ -160,23 +156,23 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
 
   const handleChangePassword = async () => {
     if (passwordForm.new !== passwordForm.confirm) {
-      showDialog('error', 'New passwords do not match.');
+      DialogService.showError('New passwords do not match.');
       return;
     }
     if (passwordForm.new.length < 6) {
-      showDialog('error', 'New password must be at least 6 characters.');
+      DialogService.showError('New password must be at least 6 characters.');
       return;
     }
     try {
       const result = await window.klms.auth.changePassword(passwordForm.current, passwordForm.new);
       if (result.success) {
-        showDialog('success', 'Password changed.');
+        DialogService.showSuccess('Password changed.');
         setPasswordForm({ current: '', new: '', confirm: '' });
       } else {
-        showDialog('error', result.error || 'Failed to change password.');
+        DialogService.showError(result.error || 'Failed to change password.');
       }
     } catch (err) {
-      showDialog('error', err.message || 'Failed to change password.');
+      DialogService.showError(err.message || 'Failed to change password.');
     }
   };
 
@@ -184,14 +180,14 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
     try {
       const result = await window.klms.backup.exportDb();
       if (result.canceled) {
-        showDialog('info', 'Export cancelled.');
+        DialogService.showInfo('Export cancelled.');
       } else if (result.success) {
-        showDialog('success', 'Backup saved to: ' + (result.path || 'selected path'));
+        DialogService.showSuccess('Backup saved to: ' + (result.path || 'selected path'));
       } else {
-        showDialog('error', result.error || 'Export failed');
+        DialogService.showError(result.error || 'Export failed');
       }
     } catch (err) {
-      showDialog('error', err.message || 'Export failed');
+      DialogService.showError(err.message || 'Export failed');
     }
   };
 
@@ -296,12 +292,9 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
 
       {/* Backup */}
       <section className="settings-section">
-        <h3>Backup</h3>
         <p className="muted">Export the SQLite database file for manual backup.</p>
         <button type="button" className="btn-primary" onClick={handleBackup}>Export database backup</button>
       </section>
-
-      <AppDialog open={dialog.open} type={dialog.type} message={dialog.message} onClose={closeDialog} />
 
       <style>{`
         .settings-page h2 { font-size: 1.25rem; margin-bottom: 1rem; }

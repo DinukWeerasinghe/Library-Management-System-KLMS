@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AppDialog } from '../components/AppDialog';
+import { DialogService } from '../services/DialogService';
 
 const REPORT_TYPES = [
   { id: 'issued', label: 'Issued Books Report' },
@@ -44,11 +44,8 @@ export function ReportsPage({ features = {} }) {
   const [mostBorrowed, setMostBorrowed] = useState([]);
   const [topMembers, setTopMembers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
 
   const reportsEnabled = Boolean(features.enable_reports);
-  const showDialog = (type, message) => setDialog({ open: true, type, message });
-  const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
 
   useEffect(() => {
     if (reportsEnabled && reportType === 'member') {
@@ -73,7 +70,7 @@ export function ReportsPage({ features = {} }) {
         setTopMembers(res.topMembers || []);
       })
       .catch(() => {
-        showDialog('error', 'Failed to load report');
+        DialogService.showError('Failed to load report');
         setRows([]);
       })
       .finally(() => setLoading(false));
@@ -81,17 +78,17 @@ export function ReportsPage({ features = {} }) {
 
   const handleExportCSV = () => {
     if (rows.length === 0) {
-      showDialog('info', 'No data to export');
+      DialogService.showInfo('No data to export');
       return;
     }
     downloadCSV(rows, `report_${reportType}.csv`);
-    showDialog('success', 'Report exported successfully');
+    DialogService.showSuccess('Report exported successfully');
   };
 
   if (!reportsEnabled) {
     return (
       <div className="reports-page reports-disabled">
-        <p>Reports are disabled. Enable &quot;Enable reports&quot; in Settings to access this page.</p>
+        <p>Reports are disabled. Enable "Enable reports" in Settings to access this page.</p>
       </div>
     );
   }
@@ -105,122 +102,122 @@ export function ReportsPage({ features = {} }) {
       : [];
 
   return (
-    <div className="reports-page">
-      <div className="view-header">
-        <div>
-          <h2>Library Reports</h2>
-          <p className="subtitle">Insights into books, members, and transactions</p>
+    <>
+      <div className="reports-page">
+        <div className="view-header">
+          <div>
+            <h2>Library Reports</h2>
+            <p className="subtitle">Insights into books, members, and transactions</p>
+          </div>
+          <button
+            type="button"
+            className="btn-export"
+            onClick={handleExportCSV}
+            disabled={loading || rows.length === 0}
+          >
+            Export CSV
+          </button>
         </div>
-        <button
-          type="button"
-          className="btn-export"
-          onClick={handleExportCSV}
-          disabled={loading || rows.length === 0}
-        >
-          Export CSV
-        </button>
-      </div>
 
-      <div className="reports-toolbar">
-        <div className="toolbar-group">
-          <label>Report Type
-            <select value={reportType} onChange={(e) => setReportType(e.target.value)} disabled={loading}>
-              {REPORT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-            </select>
-          </label>
-          {reportType === 'member' && (
-            <label>Member
-              <select value={memberId} onChange={(e) => setMemberId(e.target.value)} disabled={loading}>
-                <option value="">All Members</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.member_type})</option>)}
+        <div className="reports-toolbar">
+          <div className="toolbar-group">
+            <label>Report Type
+              <select value={reportType} onChange={(e) => setReportType(e.target.value)} disabled={loading}>
+                {REPORT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
               </select>
             </label>
-          )}
+            {reportType === 'member' && (
+              <label>Member
+                <select value={memberId} onChange={(e) => setMemberId(e.target.value)} disabled={loading}>
+                  <option value="">All Members</option>
+                  {members.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.member_type})</option>)}
+                </select>
+              </label>
+            )}
+          </div>
+          <div className="toolbar-group">
+            <label>From Date
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} disabled={loading} />
+            </label>
+            <label>To Date
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} disabled={loading} />
+            </label>
+          </div>
         </div>
-        <div className="toolbar-group">
-          <label>From Date
-            <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} disabled={loading} />
-          </label>
-          <label>To Date
-            <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} disabled={loading} />
-          </label>
-        </div>
-      </div>
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <span className="stat-label">Total Issued</span>
-          <span className="stat-value">{summary.totalIssued}</span>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <span className="stat-label">Total Issued</span>
+            <span className="stat-value">{summary.totalIssued}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Total Returned</span>
+            <span className="stat-value">{summary.totalReturned}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Overdue Now</span>
+            <span className="stat-value warning">{summary.totalOverdue}</span>
+          </div>
+          <div className="stat-card">
+            <span className="stat-label">Fine Collected</span>
+            <span className="stat-value success">LKR {summary.totalFineCollected.toFixed(2)}</span>
+          </div>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Total Returned</span>
-          <span className="stat-value">{summary.totalReturned}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Overdue Now</span>
-          <span className="stat-value warning">{summary.totalOverdue}</span>
-        </div>
-        <div className="stat-card">
-          <span className="stat-label">Fine Collected</span>
-          <span className="stat-value success">LKR {summary.totalFineCollected.toFixed(2)}</span>
-        </div>
-      </div>
 
-      <div className="insights-grid">
-        <div className="insight-section card">
-          <h3>Most Borrowed Books</h3>
-          {mostBorrowed.length === 0 ? <p className="muted">No data available</p> : (
-            <table className="mini-table">
-              <thead><tr><th>Book Title</th><th>Borrows</th></tr></thead>
+        <div className="insights-grid">
+          <div className="insight-section card">
+            <h3>Most Borrowed Books</h3>
+            {mostBorrowed.length === 0 ? <p className="muted">No data available</p> : (
+              <table className="mini-table">
+                <thead><tr><th>Book Title</th><th>Borrows</th></tr></thead>
+                <tbody>
+                  {mostBorrowed.map((b, i) => (
+                    <tr key={i}><td>{b.title}</td><td>{b.borrow_count}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          <div className="insight-section card">
+            <h3>Top Active Members</h3>
+            {topMembers.length === 0 ? <p className="muted">No data available</p> : (
+              <table className="mini-table">
+                <thead><tr><th>Member</th><th>Issues</th></tr></thead>
+                <tbody>
+                  {topMembers.map((m, i) => (
+                    <tr key={i}><td>{m.name}</td><td>{m.issue_count}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        <div className="reports-table-wrap card">
+          <div className="table-header">
+            <h3>Detailed Records</h3>
+            <span className="count-badge">{rows.length} records</span>
+          </div>
+          {loading ? (
+            <div className="loading-state">Loading report data...</div>
+          ) : rows.length === 0 ? (
+            <p className="empty">No records found for the selected filters.</p>
+          ) : (
+            <table className="reports-table">
+              <thead>
+                <tr>{columns.map((col) => <th key={col}>{col.replace(/_/g, ' ')}</th>)}</tr>
+              </thead>
               <tbody>
-                {mostBorrowed.map((b, i) => (
-                  <tr key={i}><td>{b.title}</td><td>{b.borrow_count}</td></tr>
+                {rows.map((row, idx) => (
+                  <tr key={row.id != null ? row.id : idx}>
+                    {columns.map((col) => <td key={col}>{row[col] ?? '–'}</td>)}
+                  </tr>
                 ))}
               </tbody>
             </table>
           )}
         </div>
-        <div className="insight-section card">
-          <h3>Top Active Members</h3>
-          {topMembers.length === 0 ? <p className="muted">No data available</p> : (
-            <table className="mini-table">
-              <thead><tr><th>Member</th><th>Issues</th></tr></thead>
-              <tbody>
-                {topMembers.map((m, i) => (
-                  <tr key={i}><td>{m.name}</td><td>{m.issue_count}</td></tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
       </div>
-
-      <div className="reports-table-wrap card">
-        <div className="table-header">
-          <h3>Detailed Records</h3>
-          <span className="count-badge">{rows.length} records</span>
-        </div>
-        {loading ? (
-          <div className="loading-state">Loading report data...</div>
-        ) : rows.length === 0 ? (
-          <p className="empty">No records found for the selected filters.</p>
-        ) : (
-          <table className="reports-table">
-            <thead>
-              <tr>{columns.map((col) => <th key={col}>{col.replace(/_/g, ' ')}</th>)}</tr>
-            </thead>
-            <tbody>
-              {rows.map((row, idx) => (
-                <tr key={row.id != null ? row.id : idx}>
-                  {columns.map((col) => <td key={col}>{row[col] ?? '–'}</td>)}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <AppDialog open={dialog.open} type={dialog.type} message={dialog.message} onClose={closeDialog} />
 
       <style>{`
         .reports-page { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -298,6 +295,6 @@ export function ReportsPage({ features = {} }) {
         .loading-state { padding: 2rem; text-align: center; color: var(--color-text-muted); font-style: italic; }
         .muted { color: var(--color-text-muted); font-size: 0.9rem; margin-top: 1rem; }
       `}</style>
-    </div>
+    </>
   );
 }

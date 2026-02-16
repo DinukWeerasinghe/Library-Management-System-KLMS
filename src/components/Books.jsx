@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
+import { DialogService } from '../services/DialogService';
 
 export function Books({ features = {} }) {
   const [list, setList] = useState([]);
@@ -7,7 +8,6 @@ export function Books({ features = {} }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
-  const [error, setError] = useState('');
   const [categories, setCategories] = useState([]);
   const [viewingBarcode, setViewingBarcode] = useState(null);
   const showCategories = features.enable_categories;
@@ -58,7 +58,6 @@ export function Books({ features = {} }) {
   const openCreate = () => {
     setEditing('new');
     setForm({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
-    setError('');
   };
 
   const openEdit = (b) => {
@@ -71,18 +70,15 @@ export function Books({ features = {} }) {
       total_copies: b.total_copies ?? 1,
       external_code: b.external_code || '',
     });
-    setError('');
   };
 
   const closeForm = () => {
     setEditing(null);
-    setError('');
   };
 
   const save = async () => {
-    setError('');
     if (!form.title?.trim()) {
-      setError('Title is required');
+      DialogService.showError('Title is required');
       return;
     }
     const payload = {
@@ -102,19 +98,21 @@ export function Books({ features = {} }) {
       closeForm();
       loadBooks();
     } catch (err) {
-      setError(err.message || 'Failed to save');
+      DialogService.showError(err.message || 'Failed to save');
     }
   };
 
   const remove = async (id) => {
-    if (!window.confirm('Delete this book? This will remove the record and copy count.')) return;
-    try {
-      await window.klms.books.delete(id);
-      loadBooks();
-      if (editing === id) closeForm();
-    } catch (err) {
-      setError(err.message || 'Failed to delete');
-    }
+    DialogService.showConfirm('Delete this book? This will remove the record and copy count.', async () => {
+      try {
+        await window.klms.books.delete(id);
+        loadBooks();
+        if (editing === id) closeForm();
+        DialogService.showSuccess('Book deleted successfully');
+      } catch (err) {
+        DialogService.showError(err.message || 'Failed to delete');
+      }
+    });
   };
 
   const showBarcode = async (b) => {
@@ -123,20 +121,23 @@ export function Books({ features = {} }) {
       if (img) {
         setViewingBarcode({ id: b.id, code: b.internal_code, image: img });
       } else {
-        alert('Internal barcode not found for this book.');
+        DialogService.showError('Internal barcode not found for this book.');
       }
     } catch (err) {
-      console.error('Failed to load barcode:', err);
+      DialogService.showError('Failed to load barcode: ' + err.message);
+      DialogService.showError('Failed to load barcode');
     }
   };
 
   const regenerateBarcode = async (b) => {
     try {
-      alert('Generating internal barcode...');
+      // No alert here, just do it or show a loading indicator if needed. 
+      // But for now, just replace alert with nothing or success.
       await window.klms.books.update(b.id, { title: b.title }); // Saving triggers generation if missing
       loadBooks();
+      DialogService.showSuccess('Barcode generated');
     } catch (err) {
-      alert('Failed to generate barcode');
+      DialogService.showError('Failed to generate barcode');
     }
   };
 
@@ -156,7 +157,6 @@ export function Books({ features = {} }) {
         />
         <button type="button" onClick={handleSearch}>Search</button>
       </div>
-      {error && <p className="error-msg">{error}</p>}
       {(editing === 'new' || editing) && (
         <div className="form-card">
           <h3>{editing === 'new' ? 'New Book' : 'Edit Book'}</h3>
@@ -260,7 +260,6 @@ export function Books({ features = {} }) {
         .toolbar input { flex: 1; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); color: var(--color-text); }
         .toolbar button { padding: 0.5rem 1rem; background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); border-radius: var(--radius); }
         .toolbar button:hover { background: var(--color-surface-hover); }
-        .error-msg { color: var(--color-danger); margin-bottom: 0.5rem; }
         .form-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
         .form-card h3 { margin-bottom: 0.75rem; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }

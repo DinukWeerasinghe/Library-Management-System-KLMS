@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
+import { DialogProvider } from './components/DialogProvider';
 import './styles/index.css';
 
 export default function App() {
@@ -53,5 +54,10 @@ export default function App() {
     return <Login onSuccess={handleLogin} />;
   }
 
-  return <Dashboard session={session} onLogout={handleLogout} />;
+  return (
+    <>
+      <Dashboard session={session} onLogout={handleLogout} />
+      <DialogProvider />
+    </>
+  );
 }

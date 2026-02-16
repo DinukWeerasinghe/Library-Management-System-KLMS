@@ -7,12 +7,14 @@ import React from 'react';
  * @param {string} message - Message text
  * @param {function} onClose - Called when user dismisses (e.g. OK click or backdrop)
  */
-export function AppDialog({ open, type = 'info', message = '', onClose }) {
+export function AppDialog({ open, type = 'info', message = '', onClose, onConfirm }) {
   if (!open) return null;
 
   const titles = {
     success: 'Success',
     error: 'Error',
+    warning: 'Warning',
+    confirm: 'Please Confirm',
     info: 'Information',
     loading: 'Processing...',
   };
@@ -41,11 +43,24 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
           {message}
         </p>
 
-        {type !== 'loading' && (
-          <button type="button" className="app-dialog-ok" onClick={onClose}>
-            OK
-          </button>
-        )}
+        <div className="app-dialog-actions">
+          {type === 'confirm' ? (
+            <>
+              <button type="button" className="btn-cancel" onClick={onClose}>
+                Cancel
+              </button>
+              <button type="button" className="btn-confirm" onClick={onConfirm}>
+                Confirm
+              </button>
+            </>
+          ) : (
+            type !== 'loading' && (
+              <button type="button" className="app-dialog-ok" onClick={onClose}>
+                OK
+              </button>
+            )
+          )}
+        </div>
       </div>
       <style>{`
         .app-dialog-overlay {
@@ -68,6 +83,8 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         }
         .app-dialog--success { border-left: 4px solid var(--color-success); }
         .app-dialog--error { border-left: 4px solid var(--color-danger); }
+        .app-dialog--warning { border-left: 4px solid var(--color-warning); }
+        .app-dialog--confirm { border-left: 4px solid var(--color-primary); }
         .app-dialog--info { border-left: 4px solid var(--color-primary); }
         .app-dialog--loading { border-left: 4px solid var(--color-warning); }
         .app-dialog-title {
@@ -77,6 +94,8 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         }
         .app-dialog--success .app-dialog-title { color: var(--color-success); }
         .app-dialog--error .app-dialog-title { color: var(--color-danger); }
+        .app-dialog--warning .app-dialog-title { color: var(--color-warning); }
+        .app-dialog--confirm .app-dialog-title { color: var(--color-primary); }
         .app-dialog--info .app-dialog-title { color: var(--color-primary); }
         .app-dialog--loading .app-dialog-title { color: var(--color-warning); }
         .spinner-container {
@@ -98,20 +117,38 @@ export function AppDialog({ open, type = 'info', message = '', onClose }) {
         .app-dialog-message {
           font-size: 0.9rem;
           color: var(--color-text-muted);
-          margin-bottom: 1rem;
+          margin-bottom: 1.25rem;
           line-height: 1.4;
         }
-        .app-dialog-ok {
-          width: 100%;
-          padding: 0.5rem 1rem;
+        .app-dialog-actions {
+          display: flex;
+          gap: 0.75rem;
+          margin-top: 0.5rem;
+        }
+        .app-dialog-ok, .btn-confirm {
+          flex: 1;
+          padding: 0.6rem 1rem;
           background: var(--button-color);
           color: var(--header-text-color);
           border: none;
           border-radius: var(--radius);
           font-weight: 600;
           cursor: pointer;
+          transition: all 0.2s;
         }
-        .app-dialog-ok:hover { background: var(--button-hover-color); }
+        .btn-cancel {
+          flex: 1;
+          padding: 0.6rem 1rem;
+          background: var(--color-surface-hover);
+          color: var(--color-text);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius);
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .app-dialog-ok:hover, .btn-confirm:hover { background: var(--button-hover-color); transform: translateY(-1px); }
+        .btn-cancel:hover { background: var(--color-border); }
       `}</style>
     </div>
   );

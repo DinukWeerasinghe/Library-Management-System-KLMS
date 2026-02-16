@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { DialogService } from '../services/DialogService';
 
 export function UsersPage() {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [formData, setFormData] = useState({ username: '', password: '', role: 'TEACHER' });
 
@@ -17,19 +17,21 @@ export function UsersPage() {
             setUsers(data);
             setLoading(false);
         } catch (err) {
-            setError(err.message);
+            DialogService.showError('Failed to load users: ' + err.message);
             setLoading(false);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this user?')) return;
-        try {
-            await window.klms.users.delete(id);
-            loadUsers();
-        } catch (err) {
-            alert('Error deleting user: ' + err.message);
-        }
+        DialogService.showConfirm('Are you sure you want to delete this user?', async () => {
+            try {
+                await window.klms.users.delete(id);
+                loadUsers();
+                DialogService.showSuccess('User deleted successfully');
+            } catch (err) {
+                DialogService.showError('Error deleting user: ' + err.message);
+            }
+        });
     };
 
     const handleCreate = async (e) => {
@@ -39,8 +41,9 @@ export function UsersPage() {
             setShowModal(false);
             setFormData({ username: '', password: '', role: 'TEACHER' });
             loadUsers();
+            DialogService.showSuccess('User created successfully');
         } catch (err) {
-            alert('Error creating user: ' + err.message);
+            DialogService.showError('Error creating user: ' + err.message);
         }
     };
 
@@ -53,7 +56,6 @@ export function UsersPage() {
                 <button className="btn-primary" onClick={() => setShowModal(true)}>Add User</button>
             </div>
 
-            {error && <div className="error-message">{error}</div>}
 
             <table className="data-table">
                 <thead>

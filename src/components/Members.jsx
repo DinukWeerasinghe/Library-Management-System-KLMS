@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
-import { AppDialog } from './AppDialog';
+import { DialogService } from '../services/DialogService';
 
 export function Members() {
   const [list, setList] = useState([]);
@@ -8,10 +8,8 @@ export function Members() {
   const [searchQuery, setSearchQuery] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
-  const [error, setError] = useState('');
   const [filterType, setFilterType] = useState('');
   const [viewingBarcode, setViewingBarcode] = useState(null); // { id, code, image }
-  const [dialog, setDialog] = useState({ open: false, type: 'info', message: '' });
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,7 +51,6 @@ export function Members() {
     if (isGeneratingCode) return;
 
     // reset everything first
-    setError('');
     setForm({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
     setEditing('new');
     setIsGeneratingCode(true);
@@ -64,8 +61,7 @@ export function Members() {
         setForm(prev => ({ ...prev, member_code: newCode }));
       }
     } catch (err) {
-      console.error('Failed to generate code:', err);
-      setError('Auto-generation failed. Please enter code manually.');
+      DialogService.showError('Failed to generate code: ' + (err.message || 'Auto-generation failed'));
     } finally {
       setIsGeneratingCode(false);
     }
@@ -81,20 +77,17 @@ export function Members() {
       address: m.address || '',
       member_code: m.member_code || '',
     });
-    setError('');
   };
 
   const closeForm = () => {
     setEditing(null);
-    setError('');
   };
 
   const save = async () => {
     if (isSubmitting) return;
-    setError('');
 
     if (!form.name?.trim()) {
-      setError('Name is required');
+      DialogService.showError('Name is required');
       return;
     }
 
@@ -103,32 +96,43 @@ export function Members() {
       if (editing === 'new') {
         const config = await window.klms.config.getAll();
         const fee = config.registration_fee || '0';
-        if (!window.confirm(`Is the registration fee of ${fee} paid?`)) {
-          setIsSubmitting(false);
-          return;
-        }
-        await window.klms.members.create(form);
+
+        DialogService.showConfirm(`Is the registration fee of ${fee} paid?`, async () => {
+          try {
+            await window.klms.members.create(form);
+            closeForm();
+            load(filterType ? { memberType: filterType } : {});
+            DialogService.showSuccess('Member registered successfully');
+          } catch (err) {
+            DialogService.showError(err.message || 'Failed to save');
+          } finally {
+            setIsSubmitting(false);
+          }
+        });
+        return; // handle async confirm separately
       } else {
         await window.klms.members.update(editing, form);
+        closeForm();
+        load(filterType ? { memberType: filterType } : {});
       }
-      closeForm();
-      load(filterType ? { memberType: filterType } : {});
     } catch (err) {
-      setError(err.message || 'Failed to save');
+      DialogService.showError(err.message || 'Failed to save');
     } finally {
-      setIsSubmitting(false);
+      if (editing !== 'new') setIsSubmitting(false);
     }
   };
 
   const remove = async (id) => {
-    if (!window.confirm('Delete this member?')) return;
-    try {
-      await window.klms.members.delete(id);
-      load(filterType ? { memberType: filterType } : {});
-      if (editing === id) closeForm();
-    } catch (err) {
-      setError(err.message || 'Failed to delete');
-    }
+    DialogService.showConfirm('Delete this member? This action cannot be undone.', async () => {
+      try {
+        await window.klms.members.delete(id);
+        load(filterType ? { memberType: filterType } : {});
+        if (editing === id) closeForm();
+        DialogService.showSuccess('Member deleted successfully');
+      } catch (err) {
+        DialogService.showError(err.message || 'Failed to delete');
+      }
+    });
   };
 
   const showBarcode = async (m) => {
@@ -137,10 +141,10 @@ export function Members() {
       if (img) {
         setViewingBarcode({ id: m.id, code: m.member_code, image: img });
       } else {
-        alert('Barcode not found for this member.');
+        DialogService.showError('Barcode not found for this member.');
       }
     } catch (err) {
-      console.error('Failed to load barcode:', err);
+      DialogService.showError('Failed to load barcode: ' + err.message);
     }
   };
 
@@ -151,11 +155,12 @@ export function Members() {
       // I should update members:update to generate if missing or add a specific IPC.
       // Alternatively, I'll just call BarcodeService directly if I expose it.
       // For now, let's just make the UI show a clear state.
-      alert('Generating barcode...');
+      // alert('Generating barcode...'); // Removed alert
       await window.klms.members.update(m.id, { member_code: m.member_code });
       load(filterType ? { memberType: filterType } : {});
+      DialogService.showSuccess('Barcode generated');
     } catch (err) {
-      alert('Failed to generate barcode');
+      DialogService.showError('Failed to generate barcode');
     }
   };
 
@@ -180,7 +185,6 @@ export function Members() {
         />
         <button type="button" onClick={handleSearch}>Search</button>
       </div>
-      {error && <p className="error-msg">{error}</p>}
       {(editing === 'new' || editing) && (
         <div className="form-card">
           <h3>{editing === 'new' ? 'New Member' : 'Edit Member'}</h3>
@@ -271,13 +275,6 @@ export function Members() {
         </div>
       )}
 
-      <AppDialog
-        open={dialog.open}
-        type={dialog.type}
-        message={dialog.message}
-        onClose={() => setDialog(d => ({ ...d, open: false }))}
-      />
-
       <style>{`
         .members-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .members-view .view-header h2 { font-size: 1.25rem; }
@@ -288,7 +285,6 @@ export function Members() {
         .toolbar input { flex: 1; min-width: 200px; }
         .toolbar button { padding: 0.5rem 1rem; background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); border-radius: var(--radius); }
         .toolbar button:hover { background: var(--color-surface-hover); }
-        .error-msg { color: var(--color-danger); margin-bottom: 0.5rem; }
         .form-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }
         .form-card h3 { margin-bottom: 0.75rem; }
         .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
