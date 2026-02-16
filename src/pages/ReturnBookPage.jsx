@@ -108,7 +108,12 @@ export function ReturnBookPage({ features = {} }) {
         loadIssued();
       }
     } catch (err) {
-      DialogService.showError(err.message || 'Scan failed');
+      let msg = err.message || 'Scan failed';
+      // Strip Electron's remote invocation prefix for cleaner dialogs
+      if (msg.includes('Error: ')) {
+        msg = msg.split('Error: ').pop();
+      }
+      DialogService.showError(msg);
       setScanCode('');
     } finally {
       setScanning(false);
@@ -315,9 +320,9 @@ export function ReturnBookPage({ features = {} }) {
         .step-content p { margin: 0; font-size: 0.875rem; color: var(--color-text-muted); }
 
         .active-member { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
-        .active-member .member-name { font-weight: 600; color: #166534; }
-        .active-member .member-code { font-size: 0.75rem; background: #dcfce7; color: #166534; padding: 0.1rem 0.4rem; border-radius: 4px; }
-        .btn-change { border: none; background: none; color: #ef4444; font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 0; }
+        .active-member .member-name { font-weight: 600; color: var(--color-success); }
+        .active-member .member-code { font-size: 0.75rem; background: rgba(16, 185, 129, 0.1); color: var(--color-success); padding: 0.1rem 0.4rem; border-radius: 4px; }
+        .btn-change { border: none; background: none; color: var(--color-danger); font-size: 0.75rem; cursor: pointer; text-decoration: underline; padding: 0; }
 
         .scan-input-section {
           grid-column: span 2;
@@ -340,7 +345,7 @@ export function ReturnBookPage({ features = {} }) {
         .scan-input:focus {
           border-color: var(--button-color);
           outline: none;
-          box-shadow: 0 0 0 4px rgba(var(--button-color-rgb), 0.1);
+          box-shadow: 0 0 0 4px rgba(var(--button-color-rgb, 79, 70, 229), 0.1);
         }
 
         .scanning-indicator {
@@ -361,15 +366,15 @@ export function ReturnBookPage({ features = {} }) {
         }
 
         @keyframes pulse {
-          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(var(--button-color-rgb), 0.7); }
-          70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(var(--button-color-rgb), 0); }
-          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(var(--button-color-rgb), 0); }
+          0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(var(--button-color-rgb, 79, 70, 229), 0.7); }
+          70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(var(--button-color-rgb, 79, 70, 229), 0); }
+          100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(var(--button-color-rgb, 79, 70, 229), 0); }
         }
 
         .return-success-alert {
           margin-top: 1.5rem;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
+          background: rgba(16, 185, 129, 0.1);
+          border: 1px solid var(--color-success);
           border-radius: 0.75rem;
           padding: 1rem 1.5rem;
           display: flex;
@@ -386,7 +391,7 @@ export function ReturnBookPage({ features = {} }) {
         .alert-icon {
           width: 2rem;
           height: 2rem;
-          background: #22c55e;
+          background: var(--color-success);
           color: white;
           border-radius: 50%;
           display: flex;
@@ -395,10 +400,10 @@ export function ReturnBookPage({ features = {} }) {
           flex-shrink: 0;
         }
         .alert-body { flex: 1; }
-        .alert-body strong { display: block; color: #166534; font-size: 0.95rem; }
-        .alert-body p { margin: 0; color: #166534; font-size: 0.875rem; }
-        .fine-tag { display: inline-block; margin-top: 0.25rem; font-size: 0.75rem; font-weight: 700; color: #b91c1c; background: #fee2e2; padding: 0.1rem 0.5rem; border-radius: 4px; }
-        .btn-dismiss { background: none; border: none; font-size: 1.5rem; color: #166534; cursor: pointer; padding: 0.5rem; lineHeight: 1; }
+        .alert-body strong { display: block; color: var(--color-success); font-size: 0.95rem; }
+        .alert-body p { margin: 0; color: var(--color-text); font-size: 0.875rem; }
+        .fine-tag { display: inline-block; margin-top: 0.25rem; font-size: 0.75rem; font-weight: 700; color: var(--color-danger); background: rgba(239, 68, 68, 0.1); padding: 0.1rem 0.5rem; border-radius: 4px; }
+        .btn-dismiss { background: none; border: none; font-size: 1.5rem; color: var(--color-text-muted); cursor: pointer; padding: 0.5rem; lineHeight: 1; }
 
         .issued-list-card {
           background: var(--color-surface);
@@ -423,6 +428,7 @@ export function ReturnBookPage({ features = {} }) {
           border-radius: 0.5rem;
           font-size: 0.8rem;
           cursor: pointer;
+          color: var(--color-text);
         }
         .btn-refresh:hover { background: var(--color-bg); }
 
@@ -446,14 +452,14 @@ export function ReturnBookPage({ features = {} }) {
           font-size: 0.95rem;
         }
 
-        .issued-table tr:hover { background: rgba(var(--button-color-rgb), 0.02); }
-        .issued-table tr.highlight { background: rgba(var(--button-color-rgb), 0.05); }
+        .issued-table tr:hover { background: rgba(var(--button-color-rgb, 79, 70, 229), 0.02); }
+        .issued-table tr.highlight { background: rgba(var(--button-color-rgb, 79, 70, 229), 0.05); }
 
         .member-info { display: flex; flex-direction: column; }
         .member-info .name { font-weight: 600; color: var(--color-text); }
         .member-info .type { font-size: 0.75rem; color: var(--color-text-muted); }
 
-        .overdue { color: #ef4444; font-weight: 700; }
+        .overdue { color: var(--color-danger); font-weight: 700; }
 
         .issued-table .actions { display: flex; gap: 0.5rem; }
         
@@ -468,18 +474,18 @@ export function ReturnBookPage({ features = {} }) {
 
         .btn-return-action {
           background: var(--button-color);
-          color: white;
+          color: var(--header-text-color, white);
           border: none;
         }
         
         .btn-renew-action {
-          background: white;
+          background: transparent;
           border: 1px solid var(--color-border);
           color: var(--color-text);
         }
 
         .btn-return-action:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn-renew-action:hover { border-color: var(--button-color); color: var(--button-color); }
+        .btn-renew-action:hover { border-color: var(--button-color); color: var(--button-color); background: rgba(var(--button-color-rgb, 79, 70, 229), 0.05); }
         
         .empty-state { padding: 4rem; text-align: center; color: var(--color-text-muted); }
         .loader { padding: 3rem; text-align: center; color: var(--button-color); }
