@@ -6,6 +6,8 @@ const { getDatabase } = require('../database/connection');
 const { get: isFeatureEnabled } = require('../database/feature-toggle-repository');
 const barcodeService = require('./barcode-service');
 const logger = require('../logger');
+const activityService = require('./activity-service');
+const authService = require('./auth-service');
 
 function getAll(filters = {}) {
   const db = getDatabase();
@@ -101,6 +103,12 @@ function create(data) {
     });
   }
 
+  // Log Activity
+  const userId = authService.getCurrentUserId();
+  if (userId) {
+    activityService.logActivity(userId, activityService.ACTION_TYPES.ADD_BOOK, `Added book: ${title}`);
+  }
+
   return getById(newId);
 }
 
@@ -156,6 +164,13 @@ function deleteBook(id) {
     throw new Error('Cannot delete book with active issues. Process returns first.');
   }
   db.prepare('DELETE FROM Book WHERE id = ?').run(id);
+
+  // Log Activity
+  const userId = authService.getCurrentUserId();
+  if (userId) {
+    activityService.logActivity(userId, activityService.ACTION_TYPES.DELETE_BOOK, `Deleted book: ${existing.title}`);
+  }
+
   return { deleted: true, id };
 }
 

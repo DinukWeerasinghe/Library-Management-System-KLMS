@@ -144,6 +144,7 @@ app.whenReady().then(async () => {
     const { runBookBarcodeFillMigration } = require('./database/migrate-book-barcode-fill');
     const { runExitPinMigration } = require('./database/migrate-exit-pin');
     const { runSessionLockMigration } = require('./database/migrate-session-lock');
+    const { runActivityLogMigration } = require('./database/migrate-activity-log');
 
     runMemberCodeMigration();
     runMemberBarcodeMigration();
@@ -152,6 +153,7 @@ app.whenReady().then(async () => {
     await runBookBarcodeFillMigration();
     runExitPinMigration();
     runSessionLockMigration();
+    runActivityLogMigration();
 
     registerIpcHandlers();
     logger.info('IPC handlers registered.');
@@ -173,6 +175,16 @@ app.whenReady().then(async () => {
     if (mainWindow) {
       mainWindow.webContents.send('app:showLockScreen');
     }
+  });
+
+  ipcMain.handle('app:logLock', () => {
+    const userId = authService.getCurrentUserId();
+    if (userId) activityService.logSessionLock(userId);
+  });
+
+  ipcMain.handle('app:logUnlock', () => {
+    const userId = authService.getCurrentUserId();
+    if (userId) activityService.logSessionUnlock(userId);
   });
 });
 

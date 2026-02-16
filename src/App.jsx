@@ -12,6 +12,17 @@ export default function App() {
   const [locked, setLocked] = useState(false);
 
   useEffect(() => {
+    if (window.klms?.activity) {
+      if (locked) {
+        window.klms.activity.logLock();
+      } else if (session) {
+        // Only log unlock if we have a session (avoids initial load log)
+        window.klms.activity.logUnlock();
+      }
+    }
+  }, [locked]);
+
+  useEffect(() => {
     if (typeof window !== 'undefined' && window.klms?.auth?.getSession) {
       window.klms.auth.getSession().then((s) => {
         setSession(s);

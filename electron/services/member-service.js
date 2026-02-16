@@ -6,6 +6,8 @@ const { getDatabase } = require('../database/connection');
 const barcodeService = require('./barcode-service');
 const configRepository = require('../database/config-repository');
 const logger = require('../logger');
+const activityService = require('./activity-service');
+const authService = require('./auth-service');
 
 const MEMBER_TYPES = ['Student', 'Teacher'];
 
@@ -90,6 +92,12 @@ function create(data) {
     logger.error(`Deferred barcode generation failed for member ${newId}:`, err);
   });
 
+  // Log Activity
+  const userId = authService.getCurrentUserId();
+  if (userId) {
+    activityService.logActivity(userId, activityService.ACTION_TYPES.REGISTER_MEMBER, `Registered member: ${name} (${finalMemberCode})`);
+  }
+
   return getById(newId);
 }
 
@@ -149,6 +157,13 @@ function deleteMember(id) {
     }
   }
   db.prepare('DELETE FROM Member WHERE id = ?').run(id);
+
+  // Log Activity
+  const userId = authService.getCurrentUserId();
+  if (userId) {
+    activityService.logActivity(userId, activityService.ACTION_TYPES.DELETE_MEMBER, `Deleted member: ${existing.name}`);
+  }
+
   return { deleted: true, id };
 }
 

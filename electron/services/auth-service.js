@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const { getDatabase } = require('../database/connection');
+const activityService = require('./activity-service');
 
 let currentUserId = null;
 
@@ -14,6 +15,8 @@ function login(username, password) {
     return { success: false, error: 'Invalid username or password' };
   }
   currentUserId = user.id;
+  activityService.logSessionStart(user.id);
+  activityService.logActivity(user.id, activityService.ACTION_TYPES.LOGIN, 'User logged in');
   return {
     success: true,
     user: { id: user.id, username: user.username, role: user.role },
@@ -21,6 +24,10 @@ function login(username, password) {
 }
 
 function logout() {
+  if (currentUserId) {
+    activityService.logSessionEnd(currentUserId);
+    activityService.logActivity(currentUserId, activityService.ACTION_TYPES.LOGOUT, 'User logged out');
+  }
   currentUserId = null;
   return { success: true };
 }
@@ -51,4 +58,5 @@ module.exports = {
   logout,
   getSession,
   changePassword,
+  getCurrentUserId: () => currentUserId,
 };

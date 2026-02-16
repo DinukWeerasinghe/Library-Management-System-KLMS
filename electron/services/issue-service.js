@@ -7,6 +7,8 @@ const { get: getConfig } = require('../database/config-repository');
 const { get: isFeatureEnabled } = require('../database/feature-toggle-repository');
 const bookService = require('./book-service');
 const memberService = require('./member-service');
+const activityService = require('./activity-service');
+const authService = require('./auth-service');
 
 /**
  * Issue (lend) a book to a member.
@@ -65,6 +67,12 @@ function issueBook(memberId, bookId) {
   // 6. Reduce available copies
   bookService.decreaseAvailableCopies(bookId);
 
+  // Log Activity
+  const userId = authService.getCurrentUserId();
+  if (userId) {
+    activityService.logActivity(userId, activityService.ACTION_TYPES.ISSUE_BOOK, `Issued book: ${book.title} to ${memberId}`);
+  }
+
   return getIssueById(issueId);
 }
 
@@ -121,6 +129,12 @@ function returnBook(issueId) {
 
   // 4. Increase available copies
   bookService.increaseAvailableCopies(issue.book_id);
+
+  // Log Activity
+  const userId = authService.getCurrentUserId();
+  if (userId) {
+    activityService.logActivity(userId, activityService.ACTION_TYPES.RETURN_BOOK, `Returned book: ${issueId}`);
+  }
 
   return getIssueById(issueId);
 }
