@@ -10,6 +10,7 @@ export function Members() {
   const [form, setForm] = useState({ member_type: 'Student', name: '', email: '', phone: '', address: '', member_code: '' });
   const [filterType, setFilterType] = useState('');
   const [viewingBarcode, setViewingBarcode] = useState(null); // { id, code, image }
+  const [viewingIdCard, setViewingIdCard] = useState(null); // { id, pdfData }
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -148,6 +149,19 @@ export function Members() {
     }
   };
 
+  const handleViewIdCard = async (m) => {
+    try {
+      const pdfData = await window.klms.members.generateIdCard(m.id);
+      if (pdfData) {
+        setViewingIdCard({ id: m.id, name: m.name, pdfData });
+      } else {
+        DialogService.showError('Failed to generate ID card.');
+      }
+    } catch (err) {
+      DialogService.showError('Error generating ID card: ' + err.message);
+    }
+  };
+
   const regenerateBarcode = async (m) => {
     try {
       await window.klms.members.update(m.id, { barcode_path: null }); // Force generate in backend logic
@@ -246,6 +260,7 @@ export function Members() {
                   <td>{m.phone || '–'}</td>
                   <td>
                     <button type="button" className="btn-sm" onClick={() => openEdit(m)}>Edit</button>
+                    <button type="button" className="btn-sm" onClick={() => handleViewIdCard(m)}>ID Card</button>
                     <button type="button" className="btn-sm danger" onClick={() => remove(m.id)}>Delete</button>
                   </td>
                 </tr>
@@ -270,6 +285,36 @@ export function Members() {
             </div>
             <div className="modal-actions">
               <button onClick={() => window.print()} className="btn-primary">Print Barcode</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingIdCard && (
+        <div className="barcode-modal-overlay" onClick={() => setViewingIdCard(null)}>
+          <div className="barcode-modal id-card-preview" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Member ID Card Preview</h3>
+              <button className="close-btn" onClick={() => setViewingIdCard(null)}>×</button>
+            </div>
+            <div className="modal-body">
+              <iframe
+                src={viewingIdCard.pdfData}
+                title="ID Card PDF"
+                style={{ width: '100%', height: '350px', border: 'none', borderRadius: '4px' }}
+              />
+              <p className="barcode-hint">This is a standard ID-1 (85.6mm x 54mm) card layout.</p>
+            </div>
+            <div className="modal-actions">
+              <button
+                className="btn-primary"
+                onClick={() => {
+                  const win = window.open();
+                  win.document.write(`<iframe src="${viewingIdCard.pdfData}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                }}
+              >
+                Open Full PDF
+              </button>
             </div>
           </div>
         </div>
@@ -330,7 +375,11 @@ export function Members() {
         .barcode-id { font-weight: bold; font-size: 1.1rem; margin-bottom: 1rem; color: #333; }
         .barcode-img { max-width: 100%; height: auto; border: 1px solid #eee; padding: 1rem; background: white; margin-bottom: 1rem; }
         .barcode-hint { font-size: 0.85rem; color: #666; margin-bottom: 1.5rem; }
-        .modal-actions { display: flex; justify-content: center; }
+        .barcode-modal.id-card-preview {
+          max-width: 600px;
+          height: auto;
+        }
+        .modal-actions { display: flex; justify-content: center; gap: 0.5rem; }
       `}</style>
     </div>
   );

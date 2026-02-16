@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld('klms', {
     generateCode: () => ipcRenderer.invoke('members:generateCode'),
     getByCode: (code) => ipcRenderer.invoke('members:getByCode', code),
     getBarcodeImage: (id) => ipcRenderer.invoke('members:getBarcodeImage', id),
+    generateIdCard: (id) => ipcRenderer.invoke('members:generateIdCard', id),
   },
   // Categories (when enable_categories is on)
   categories: {

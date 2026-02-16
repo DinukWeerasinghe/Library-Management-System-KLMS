@@ -15,6 +15,7 @@ const issueService = require('./services/issue-service');
 const reportService = require('./services/report-service');
 const userService = require('./services/user-service');
 const themeService = require('./services/ThemeService');
+const idCardService = require('./services/id-card-service');
 const logger = require('./logger');
 
 function registerIpcHandlers() {
@@ -113,6 +114,14 @@ function registerIpcHandlers() {
     if (member && member.barcode_path && fs.existsSync(member.barcode_path)) {
       const buffer = fs.readFileSync(member.barcode_path);
       return `data:image/png;base64,${buffer.toString('base64')}`;
+    }
+    return null;
+  });
+  ipcMain.handle('members:generateIdCard', async (_, id) => {
+    const filePath = await idCardService.generateMemberCard(id);
+    if (filePath && fs.existsSync(filePath)) {
+      const buffer = fs.readFileSync(filePath);
+      return `data:application/pdf;base64,${buffer.toString('base64')}`;
     }
     return null;
   });
