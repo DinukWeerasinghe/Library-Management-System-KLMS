@@ -22,15 +22,14 @@ function getAll(filters = {}) {
 }
 
 function generateMemberCode() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-
-  return `KMV${year}${month}${day}${hours}${minutes}${seconds}`;
+  const db = getDatabase();
+  const last = db.prepare("SELECT member_code FROM Member WHERE member_code LIKE 'M%' ORDER BY member_code DESC LIMIT 1").get();
+  let nextNum = 1;
+  if (last && last.member_code) {
+    const num = parseInt(last.member_code.substring(1), 10);
+    if (!isNaN(num)) nextNum = num + 1;
+  }
+  return `M${String(nextNum).padStart(6, '0')}`;
 }
 
 function getById(id) {
@@ -39,8 +38,10 @@ function getById(id) {
 }
 
 function getByCode(code) {
+  if (!code) return null;
+  const trimmed = String(code).trim();
   const db = getDatabase();
-  return db.prepare('SELECT * FROM Member WHERE member_code = ?').get(code);
+  return db.prepare('SELECT * FROM Member WHERE member_code = ?').get(trimmed);
 }
 
 function create(data) {

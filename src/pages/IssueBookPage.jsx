@@ -42,7 +42,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
   useScanDetection({
     onScanDetected: (code) => {
       // Intelligently route the scanned code
-      if (code.startsWith('KMV')) {
+      if (code.startsWith('KMV') || (code.startsWith('M') && code.length === 7)) {
         handleScanMember(code, true);
       } else {
         handleScanBook(code, true);
@@ -53,8 +53,10 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const handleScanMember = async (code, force = false) => {
     setScanMemberCode(code);
     setMemberScanActive(code.length > 0);
+    const isSequential = code.startsWith('M') && code.length === 7;
+    const isTimestamp = code.startsWith('KMV') && code.length >= 17;
 
-    if (force || (code.startsWith('KMV') && code.length >= 17)) {
+    if (force || isSequential || isTimestamp) {
       try {
         const member = await window.klms.members.getByCode(code);
         if (member) {

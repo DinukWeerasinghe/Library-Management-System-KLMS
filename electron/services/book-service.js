@@ -35,23 +35,25 @@ function getById(id) {
 }
 
 function getBookByAnyCode(code) {
+  if (!code) return null;
+  const trimmed = String(code).trim();
   const db = getDatabase();
   // Order of check: 1. external_code, 2. isbn, 3. internal_code
-  let book = db.prepare('SELECT * FROM Book WHERE external_code = ?').get(code);
-  if (!book) book = db.prepare('SELECT * FROM Book WHERE isbn = ?').get(code);
-  if (!book) book = db.prepare('SELECT * FROM Book WHERE internal_code = ?').get(code);
+  let book = db.prepare('SELECT * FROM Book WHERE external_code = ?').get(trimmed);
+  if (!book) book = db.prepare('SELECT * FROM Book WHERE isbn = ?').get(trimmed);
+  if (!book) book = db.prepare('SELECT * FROM Book WHERE internal_code = ?').get(trimmed);
   return book;
 }
 
-function generateInternalBookCode() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  return `BK${year}${month}${day}${hours}${minutes}${seconds}`;
+function generateBookCode() {
+  const db = getDatabase();
+  const last = db.prepare("SELECT internal_code FROM Book WHERE internal_code LIKE 'B%' ORDER BY internal_code DESC LIMIT 1").get();
+  let nextNum = 1;
+  if (last && last.internal_code) {
+    const num = parseInt(last.internal_code.substring(1), 10);
+    if (!isNaN(num)) nextNum = num + 1;
+  }
+  return `B${String(nextNum).padStart(6, '0')}`;
 }
 
 function create(data) {
@@ -65,7 +67,7 @@ function create(data) {
   let finalInternalCode = null;
 
   if (!finalExternalCode && !isbn) {
-    finalInternalCode = generateInternalBookCode();
+    finalInternalCode = generateBookCode();
   }
 
   const stmt = db.prepare(`
@@ -150,9 +152,9 @@ function search(query) {
   const term = `%${query.trim()}%`;
   const sql = useCategories
     ? `SELECT b.*, c.name AS category_name FROM Book b LEFT JOIN Category c ON b.category_id = c.id
-       WHERE b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? ORDER BY b.title`
-    : `SELECT * FROM Book WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ? ORDER BY title`;
-  return db.prepare(sql).all(term, term, term);
+       WHERE b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? OR b.internal_code LIKE ? OR b.external_code LIKE ? ORDER BY b.title`
+    : `SELECT * FROM Book WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ? OR internal_code LIKE ? OR external_code LIKE ? ORDER BY title`;
+  return db.prepare(sql).all(term, term, term, term, term);
 }
 
 function decreaseAvailableCopies(bookId) {
