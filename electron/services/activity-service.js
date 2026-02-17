@@ -1,9 +1,14 @@
 /**
  * Activity & Session Logging Service
  * Tracks user sessions and system activities for audit and security.
+ * NOTE: Session State is kept in DB (SessionLog) for application logic.
+ * Historical Activity is written to text files to reduce DB load.
  */
 const { getDatabase } = require('../database/connection');
 const logger = require('../logger');
+const fs = require('fs');
+const path = require('path');
+const { app } = require('electron');
 
 // Activity Types
 const ACTION_TYPES = {
@@ -22,6 +27,32 @@ const ACTION_TYPES = {
     RESET_PASSWORD: 'RESET_PASSWORD'
 };
 
+const LOG_DIR = path.join(app.getPath('userData'), 'logs', 'activity');
+
+function ensureLogDir() {
+    if (!fs.existsSync(LOG_DIR)) {
+        fs.mkdirSync(LOG_DIR, { recursive: true });
+    }
+}
+
+function writeToLogFile(userId, actionType, description) {
+    try {
+        ensureLogDir();
+        const date = new Date();
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const logFile = path.join(LOG_DIR, `${dateStr}.log`);
+
+        const timestamp = date.toISOString();
+        const logEntry = `[${timestamp}] [USER:${userId}] [${actionType}] ${description}\n`;
+
+        fs.appendFile(logFile, logEntry, (err) => {
+            if (err) logger.error(`Failed to write to activity log file: ${err.message}`);
+        });
+    } catch (err) {
+        logger.error(`Error writing activity log: ${err.message}`);
+    }
+}
+
 /**
  * Starts a new user session.
  * @param {number} userId 
@@ -35,6 +66,7 @@ function logSessionStart(userId) {
       VALUES (?, datetime('now'), 'ACTIVE')
     `);
         const result = stmt.run(userId);
+        writeToLogFile(userId, ACTION_TYPES.LOGIN, 'Session Started');
         return result.lastInsertRowid;
     } catch (err) {
         logger.error('Failed to log session start:', err);
@@ -55,6 +87,7 @@ function logSessionEnd(userId) {
       SET logout_time = datetime('now'), status = 'CLOSED' 
       WHERE user_id = ? AND status IN ('ACTIVE', 'LOCKED')
     `).run(userId);
+        writeToLogFile(userId, ACTION_TYPES.LOGOUT, 'Session Ended');
     } catch (err) {
         logger.error('Failed to log session end:', err);
     }
@@ -72,10 +105,10 @@ function logSessionLock(userId) {
       SET status = 'LOCKED' 
       WHERE user_id = ? AND status = 'ACTIVE'
     `).run(userId);
+        writeToLogFile(userId, ACTION_TYPES.LOCK_SESSION, 'Session Locked');
     } catch (err) {
         logger.error('Failed to log session lock:', err);
     }
-    logActivity(userId, ACTION_TYPES.LOCK_SESSION, 'Session Locked');
 }
 
 /**
@@ -90,10 +123,10 @@ function logSessionUnlock(userId) {
       SET status = 'ACTIVE' 
       WHERE user_id = ? AND status = 'LOCKED'
     `).run(userId);
+        writeToLogFile(userId, ACTION_TYPES.UNLOCK_SESSION, 'Session Unlocked');
     } catch (err) {
         logger.error('Failed to log session unlock:', err);
     }
-    logActivity(userId, ACTION_TYPES.UNLOCK_SESSION, 'Session Unlocked');
 }
 
 /**
@@ -103,15 +136,7 @@ function logSessionUnlock(userId) {
  * @param {string} description 
  */
 function logActivity(userId, actionType, description = '') {
-    try {
-        const db = getDatabase();
-        db.prepare(`
-      INSERT INTO ActivityLog (user_id, action_type, description, timestamp)
-      VALUES (?, ?, ?, datetime('now'))
-    `).run(userId, actionType, description);
-    } catch (err) {
-        logger.error('Failed to log activity:', err);
-    }
+    writeToLogFile(userId, actionType, description);
 }
 
 module.exports = {
