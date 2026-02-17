@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DialogService } from '../services/DialogService';
+import { Upload, Download, Database } from 'lucide-react';
 
 const FEATURE_KEYS = [
   { key: 'enable_fine', label: 'Enable fine calculation' },
@@ -181,20 +182,6 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
     }
   };
 
-  const handleBackup = async () => {
-    try {
-      const result = await window.klms.backup.exportDb();
-      if (result.canceled) {
-        DialogService.showInfo('Export cancelled.');
-      } else if (result.success) {
-        DialogService.showSuccess('Backup saved to: ' + (result.path || 'selected path'));
-      } else {
-        DialogService.showError(result.error || 'Export failed');
-      }
-    } catch (err) {
-      DialogService.showError(err.message || 'Export failed');
-    }
-  };
 
   if (loading) return <div className="settings-page"><p>Loading...</p></div>;
 
@@ -387,10 +374,65 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         <button type="button" className="btn-primary" onClick={handleChangePassword}>Change password</button>
       </section>
 
-      {/* Backup */}
+      {/* Data & Storage */}
       <section className="settings-section">
-        <p className="muted">Export the SQLite database file for manual backup.</p>
-        <button type="button" className="btn-primary" onClick={handleBackup}>Export database backup</button>
+        <h3 className="flex items-center gap-2">
+          <Database size={20} className="text-[var(--primary-color)]" />
+          Data & Storage
+        </h3>
+        <p className="muted">Manage your library database backups.</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          {/* Backup */}
+          <div className="p-4 rounded border border-[var(--color-border)] bg-[var(--background-color)]">
+            <h4 className="font-medium mb-2">Backup Database</h4>
+            <p className="text-sm muted mb-4">Export a copy of your data to a safe location.</p>
+            <button
+              type="button"
+              className="btn-primary w-full flex items-center justify-center gap-2"
+              onClick={async () => {
+                try {
+                  if (window.klms?.backup?.create) {
+                    const res = await window.klms.backup.create();
+                    if (res && res.success) DialogService.showSuccess('Backup created successfully!');
+                  } else {
+                    console.error('Backup API not found');
+                  }
+                } catch (err) {
+                  DialogService.showError('Backup failed');
+                }
+              }}
+            >
+              <Download size={16} />
+              Export Backup
+            </button>
+          </div>
+
+          {/* Restore */}
+          <div className="p-4 rounded border border-[var(--color-border)] bg-[var(--background-color)]">
+            <h4 className="font-medium mb-2">Restore Database</h4>
+            <p className="text-sm muted mb-4">Restore from a file. App will restart.</p>
+            <button
+              type="button"
+              className="btn-primary w-full flex items-center justify-center gap-2"
+              style={{ backgroundColor: 'var(--secondary-color)' }}
+              onClick={async () => {
+                try {
+                  if (window.klms?.backup?.restore) {
+                    await window.klms.backup.restore();
+                  } else {
+                    console.error('Backup API not found');
+                  }
+                } catch (err) {
+                  console.error(err);
+                }
+              }}
+            >
+              <Upload size={16} />
+              Restore Data
+            </button>
+          </div>
+        </div>
       </section>
 
       <style>{`

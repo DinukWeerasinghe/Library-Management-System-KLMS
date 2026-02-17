@@ -181,6 +181,15 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', () => {
   logger.info('All windows closed');
+
+  // Auto Backup on Exit
+  try {
+    const { performAutoBackup } = require('./services/backup-service');
+    performAutoBackup();
+  } catch (e) {
+    logger.error(`Auto backup failed on exit: ${e.message}`);
+  }
+
   const { closeDatabase } = require('./database/connection');
   closeDatabase();
   if (process.platform !== 'darwin') app.quit();

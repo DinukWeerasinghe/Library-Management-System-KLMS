@@ -90,5 +90,9 @@ contextBridge.exposeInMainWorld('klms', {
   activity: {
     logLock: () => ipcRenderer.invoke('app:logLock'),
     logUnlock: () => ipcRenderer.invoke('app:logUnlock')
+  },
+  backup: {
+    create: () => ipcRenderer.invoke('backup:create'),
+    restore: () => ipcRenderer.invoke('backup:restore')
   }
 });

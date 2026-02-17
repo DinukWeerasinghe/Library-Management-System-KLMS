@@ -7,6 +7,7 @@ const fs = require('fs');
 const { getDbPath } = require('./database/connection');
 const authService = require('./services/auth-service');
 const activityService = require('./services/activity-service');
+const backupService = require('./services/backup-service');
 const configService = require('./services/config-service');
 const featureToggleRepo = require('./database/feature-toggle-repository');
 const memberService = require('./services/member-service');
@@ -158,6 +159,53 @@ function registerIpcHandlers() {
   ipcMain.handle('issues:getAll', async (_, filters) =>
     issueService.getAll(filters || {})
   );
+
+  // --- Activity Logs ---
+  // API removed as per user request (file-based logging now active)
+
+  // --- Backup & Restore ---
+  ipcMain.handle('backup:create', async () => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Save Database Backup',
+      defaultPath: `klms_backup_${new Date().toISOString().split('T')[0]}.db`,
+      filters: [{ name: 'SQLite Database', extensions: ['db'] }]
+    });
+
+    if (canceled || !filePath) return { success: false };
+
+    const success = backupService.createManualBackup(filePath);
+    return { success };
+  });
+
+  ipcMain.handle('backup:restore', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Select Backup File to Restore',
+      properties: ['openFile'],
+      filters: [{ name: 'SQLite Database', extensions: ['db'] }]
+    });
+
+    if (canceled || !filePaths || filePaths.length === 0) return { success: false };
+
+    // Confirm before restore
+    const { response } = await dialog.showMessageBox({
+      type: 'warning',
+      buttons: ['Cancel', 'Restore & Restart'],
+      defaultId: 0,
+      title: 'Confirm Restore',
+      message: 'Are you sure you want to restore this database?',
+      detail: 'Current data will be replaced. The application will restart immediately.'
+    });
+
+    if (response === 1) { // Restore & Restart
+      try {
+        backupService.restoreBackup(filePaths[0]); // Will exit app
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: false };
+  });
 
   // --- Reports ---
   ipcMain.handle('reports:getReport', async (_, type, memberId, fromDate, toDate) => {
