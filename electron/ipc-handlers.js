@@ -106,6 +106,7 @@ function registerIpcHandlers() {
 
   // --- Members ---
   ipcMain.handle('members:getAll', async (_, filters) => memberService.getAll(filters || {}));
+  ipcMain.handle('members:search', async (_, query, filters) => memberService.search(query, filters || {}));
   ipcMain.handle('members:getById', async (_, id) => memberService.getById(id));
   ipcMain.handle('members:create', async (_, data) => {
     const session = authService.getSession();
@@ -219,15 +220,7 @@ function registerIpcHandlers() {
 
   // --- Books ---
   ipcMain.handle('books:getAll', async (_, filters) => bookService.getAll(filters || {}));
-  ipcMain.handle('books:getById', async (_, id) => bookService.getById(id));
-  ipcMain.handle('books:create', async (_, data) => {
-    // Teacher can manage books? Requirement says "Manage Books". Assuming create/update/delete.
-    // Requirement: TEACHER: Manage Books.
-    return bookService.create(data);
-  });
-  ipcMain.handle('books:update', async (_, id, data) => bookService.update(id, data));
-  ipcMain.handle('books:delete', async (_, id) => bookService.delete(id));
-  ipcMain.handle('books:search', async (_, query) => bookService.search(query));
+  ipcMain.handle('books:search', async (_, query, filters) => bookService.search(query, filters || {}));
   ipcMain.handle('books:getByAnyCode', async (_, code) => bookService.getBookByAnyCode(code));
   ipcMain.handle('books:getBarcodeImage', async (_, bookId) => {
     const book = await bookService.getById(bookId);

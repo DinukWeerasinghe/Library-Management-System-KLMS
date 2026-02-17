@@ -13,13 +13,13 @@ export function Transactions({ features = {} }) {
   const load = () => {
     setLoading(true);
     Promise.all([
-      window.klms.members.getAll({}),
-      window.klms.books.getAll({}),
+      window.klms.members.getAll({ pageSize: 1000 }),
+      window.klms.books.getAll({ pageSize: 1000 }),
       window.klms.issues.getAll(filter ? { status: filter } : {}),
     ])
-      .then(([m, b, i]) => {
-        setMembers(m);
-        setBooks(b);
+      .then(([mRes, bRes, i]) => {
+        setMembers(mRes.items || []);
+        setBooks(bRes.items || []);
         setIssues(i);
       })
       .catch(() => setMessage({ type: 'error', text: 'Failed to load' }))

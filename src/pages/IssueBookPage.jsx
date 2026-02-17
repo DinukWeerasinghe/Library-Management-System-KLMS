@@ -22,12 +22,12 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const loadData = () => {
     setLoading(true);
     Promise.all([
-      window.klms.members.getAll({}),
-      window.klms.books.getAll({}),
+      window.klms.members.getAll({ pageSize: 1000 }),
+      window.klms.books.getAll({ pageSize: 1000 }),
     ])
-      .then(([m, b]) => {
-        setMembers(m);
-        setBooks(b);
+      .then(([mRes, bRes]) => {
+        setMembers(mRes.items || []);
+        setBooks(bRes.items || []);
       })
       .catch(() => DialogService.showError('Failed to load data'))
       .finally(() => setLoading(false));

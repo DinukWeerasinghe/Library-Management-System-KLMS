@@ -16,18 +16,28 @@ export function Members() {
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
 
-  const load = (filters = {}) => {
+  const loadMembers = (filters = {}) => {
     setLoading(true);
-    window.klms.members.getAll(filters).then((data) => {
-      setList(data);
+    const params = { ...filters, page, pageSize };
+
+    const promise = searchQuery.trim()
+      ? window.klms.members.search(searchQuery, params)
+      : window.klms.members.getAll(params);
+
+    promise.then((res) => {
+      setList(res.items);
+      setTotal(res.total);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
   useEffect(() => {
-    load(filterType ? { memberType: filterType } : {});
-  }, [filterType]);
+    loadMembers(filterType ? { memberType: filterType } : {});
+  }, [page, pageSize, filterType]);
 
   const handleScanDetected = useCallback((code) => {
     if (editing && code.startsWith('KMV')) {
@@ -40,13 +50,11 @@ export function Members() {
   });
 
   const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      load(filterType ? { memberType: filterType } : {});
-      return;
-    }
+    setPage(1); // Reset to first page on new search
     setLoading(true);
-    window.klms.members.search(searchQuery).then((data) => {
-      setList(data);
+    window.klms.members.search(searchQuery, { page: 1, pageSize, memberType: filterType }).then((res) => {
+      setList(res.items);
+      setTotal(res.total);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
@@ -105,7 +113,8 @@ export function Members() {
           try {
             await window.klms.members.create(form);
             closeForm();
-            load(filterType ? { memberType: filterType } : {});
+            setPage(1); // Reset to first page after creating new member
+            loadMembers(filterType ? { memberType: filterType } : {});
             DialogService.showSuccess('Member registered successfully');
           } catch (err) {
             DialogService.showError(err.message || 'Failed to save');
@@ -117,7 +126,7 @@ export function Members() {
       } else {
         await window.klms.members.update(editing, form);
         closeForm();
-        load(filterType ? { memberType: filterType } : {});
+        loadMembers(filterType ? { memberType: filterType } : {});
       }
     } catch (err) {
       DialogService.showError(err.message || 'Failed to save');
@@ -130,7 +139,8 @@ export function Members() {
     DialogService.showConfirm('Delete this member? This action cannot be undone.', async () => {
       try {
         await window.klms.members.delete(id);
-        load(filterType ? { memberType: filterType } : {});
+        setPage(1); // Reset to first page after deleting
+        loadMembers(filterType ? { memberType: filterType } : {});
         if (editing === id) closeForm();
         DialogService.showSuccess('Member deleted successfully');
       } catch (err) {
@@ -174,7 +184,7 @@ export function Members() {
       // For now, let's just make the UI show a clear state.
       // alert('Generating barcode...'); // Removed alert
       await window.klms.members.update(m.id, { member_code: m.member_code });
-      load(filterType ? { memberType: filterType } : {});
+      loadMembers(filterType ? { memberType: filterType } : {});
       DialogService.showSuccess('Barcode generated');
     } catch (err) {
       DialogService.showError('Failed to generate barcode');
@@ -193,7 +203,7 @@ export function Members() {
         </div>
       </div>
       <div className="toolbar">
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
+        <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}>
           <option value="">All types</option>
           <option value="Student">Student</option>
           <option value="Teacher">Teacher</option>
@@ -239,42 +249,78 @@ export function Members() {
       )}
       <div className="table-wrap">
         {loading ? <p>Loading...</p> : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Member Code</th>
-                <th>Barcode</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((m) => (
-                <tr key={m.id}>
-                  <td>{m.name}</td>
-                  <td>{m.member_type}</td>
-                  <td>{m.member_code || '–'}</td>
-                  <td>
-                    {m.barcode_path ? (
-                      <button type="button" className="btn-sm" onClick={() => showBarcode(m)}>View</button>
-                    ) : (
-                      <button type="button" className="btn-sm" onClick={() => regenerateBarcode(m)}>Generate</button>
-                    )}
-                  </td>
-                  <td>{m.email || '–'}</td>
-                  <td>{m.phone || '–'}</td>
-                  <td>
-                    <button type="button" className="btn-sm" onClick={() => openEdit(m)}>Edit</button>
-                    <button type="button" className="btn-sm" onClick={() => handleViewIdCard(m)}>ID Card</button>
-                    <button type="button" className="btn-sm danger" onClick={() => remove(m.id)}>Delete</button>
-                  </td>
+          <>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Member Code</th>
+                  <th>Contact</th>
+                  <th>Registration Fee Paid</th>
+                  <th>Expiry Date</th>
+                  {/* <th>Status</th> */}
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {list.map((m) => (
+                  <tr key={m.id}>
+                    <td>{m.name}</td>
+                    <td>{m.member_type}</td>
+                    <td>{m.member_code}</td>
+                    <td>
+                      <div style={{ fontSize: '0.8rem' }}>
+                        {m.email && <div>{m.email}</div>}
+                        {m.phone && <div>{m.phone}</div>}
+                      </div>
+                    </td>
+                    <td>{m.registration_fee_paid ? `Rs. ${m.registration_fee_paid.toFixed(2)}` : '0.00'}</td>
+                    <td>{m.expiry_date || '–'}</td>
+                    {/* <td><span className={`badge ${window.klms.members.isActive(m.id) ? 'success' : 'danger'}`}>{window.klms.members.isActive(m.id) ? 'Active' : 'Expired'}</span></td> */}
+                    <td>
+                      <button type="button" className="btn-sm" onClick={() => openEdit(m)}>Edit</button>
+                      <button type="button" className="btn-sm" onClick={() => handleViewIdCard(m)}>Card</button>
+                      <button type="button" className="btn-sm danger" onClick={() => remove(m.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="pagination">
+              <div className="pagination-info">
+                Showing {Math.min(total, (page - 1) * pageSize + 1)} to {Math.min(total, page * pageSize)} of {total} members
+              </div>
+              <div className="pagination-controls">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => p - 1)}
+                  className="btn-sm"
+                >
+                  Previous
+                </button>
+                <span className="page-num">Page {page} of {Math.ceil(total / pageSize) || 1}</span>
+                <button
+                  disabled={page >= Math.ceil(total / pageSize)}
+                  onClick={() => setPage(p => p + 1)}
+                  className="btn-sm"
+                >
+                  Next
+                </button>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(1); }}
+                  className="page-size-select"
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={20}>20 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+            </div>
+          </>
         )}
         {!loading && list.length === 0 && <p className="muted">No members found.</p>}
       </div>
@@ -331,7 +377,7 @@ export function Members() {
       {showImport && (
         <ImportMemberDialog
           onClose={() => setShowImport(false)}
-          onImportComplete={() => load(filterType ? { memberType: filterType } : {})}
+          onImportComplete={() => loadMembers(filterType ? { memberType: filterType } : {})}
         />
       )}
 
@@ -346,6 +392,13 @@ export function Members() {
         .btn-secondary:hover { background: var(--color-surface-hover); }
         .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
+
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); flex-wrap: wrap; gap: 1rem; }
+        .pagination-info { font-size: 0.875rem; color: var(--color-text-muted); }
+        .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+        .page-num { font-size: 0.875rem; font-weight: 500; }
+        .page-size-select { padding: 0.25rem 0.5rem; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg); color: var(--color-text); font-size: 0.8125rem; }
+
         .toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
         .toolbar select, .toolbar input { padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); color: var(--color-text); }
         .toolbar input { flex: 1; min-width: 200px; }

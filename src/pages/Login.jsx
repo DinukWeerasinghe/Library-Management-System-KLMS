@@ -37,11 +37,11 @@ export function Login({ onSuccess }) {
     setPublicSearch('');
     try {
       if (view === 'books') {
-        const books = await window.klms.books.getAll();
-        setPublicData(books);
+        const res = await window.klms.books.getAll({ pageSize: 1000 });
+        setPublicData(res.items || []);
       } else if (view === 'members') {
-        const members = await window.klms.members.getAll();
-        setPublicData(members);
+        const res = await window.klms.members.getAll({ pageSize: 1000 });
+        setPublicData(res.items || []);
       } else if (view === 'due') {
         const issues = await window.klms.issues.getAll({ status: 'ISSUED' });
         const now = new Date();

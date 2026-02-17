@@ -49,7 +49,9 @@ export function ReportsPage({ features = {} }) {
 
   useEffect(() => {
     if (reportsEnabled && reportType === 'member') {
-      window.klms.members.getAll({}).then(setMembers).catch(() => setMembers([]));
+      window.klms.members.getAll({ pageSize: 1000 })
+        .then(res => setMembers(res.items || []))
+        .catch(() => setMembers([]));
     }
   }, [reportsEnabled, reportType]);
 

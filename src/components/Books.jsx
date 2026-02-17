@@ -13,6 +13,9 @@ export function Books({ features = {} }) {
   const [categories, setCategories] = useState([]);
   const [viewingBarcode, setViewingBarcode] = useState(null);
   const [showImport, setShowImport] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   const showCategories = features.enable_categories;
 
   useEffect(() => {
@@ -23,15 +26,28 @@ export function Books({ features = {} }) {
 
   const loadBooks = (filters = {}) => {
     setLoading(true);
-    window.klms.books.getAll(filters).then((data) => {
-      setList(data);
+    const searchParams = {
+      ...filters,
+      page,
+      pageSize,
+      categoryId: filters.categoryId || (showCategories && form.category_id ? form.category_id : undefined)
+    };
+
+    // Determine if we should call search or getAll
+    const promise = searchQuery.trim()
+      ? window.klms.books.search(searchQuery, searchParams)
+      : window.klms.books.getAll(searchParams);
+
+    promise.then((res) => {
+      setList(res.items);
+      setTotal(res.total);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
 
   useEffect(() => {
     loadBooks();
-  }, []);
+  }, [page, pageSize]);
 
   useScanDetection({
     onScanDetected: (code) => {
@@ -47,13 +63,11 @@ export function Books({ features = {} }) {
   });
 
   const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      loadBooks();
-      return;
-    }
+    setPage(1); // Reset to page 1 on new search
     setLoading(true);
-    window.klms.books.search(searchQuery).then((data) => {
-      setList(data);
+    window.klms.books.search(searchQuery, { page: 1, pageSize }).then((res) => {
+      setList(res.items);
+      setTotal(res.total);
       setLoading(false);
     }).catch(() => setLoading(false));
   };
@@ -189,45 +203,80 @@ export function Books({ features = {} }) {
       )}
       <div className="table-wrap">
         {loading ? <p>Loading...</p> : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Author</th>
-                <th>ID Codes</th>
-                <th>KLMS Barcode</th>
-                {showCategories && <th>Category</th>}
-                <th>Available</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((b) => (
-                <tr key={b.id}>
-                  <td>{b.title}</td>
-                  <td>{b.author || '–'}</td>
-                  <td>
-                    <div style={{ fontSize: '0.8rem' }}>
-                      {b.isbn && <div>ISBN: {b.isbn}</div>}
-                      {b.external_code && <div>EXT: {b.external_code}</div>}
-                      {b.internal_code && <div>INT: {b.internal_code}</div>}
-                    </div>
-                  </td>
-                  <td>
-                    {b.barcode_path ? (
-                      <button type="button" className="btn-sm" onClick={() => showBarcode(b)}>View</button>
-                    ) : (b.internal_code ? <button type="button" className="btn-sm" onClick={() => regenerateBarcode(b)}>Generate</button> : '–')}
-                  </td>
-                  {showCategories && <td>{b.category_name || '–'}</td>}
-                  <td>{b.available_copies} / {b.total_copies}</td>
-                  <td>
-                    <button type="button" className="btn-sm" onClick={() => openEdit(b)}>Edit</button>
-                    <button type="button" className="btn-sm danger" onClick={() => remove(b.id)}>Delete</button>
-                  </td>
+          <>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Author</th>
+                  <th>ID Codes</th>
+                  <th>KLMS Barcode</th>
+                  {showCategories && <th>Category</th>}
+                  <th>Available</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {list.map((b) => (
+                  <tr key={b.id}>
+                    <td>{b.title}</td>
+                    <td>{b.author || '–'}</td>
+                    <td>
+                      <div style={{ fontSize: '0.8rem' }}>
+                        {b.isbn && <div>ISBN: {b.isbn}</div>}
+                        {b.external_code && <div>EXT: {b.external_code}</div>}
+                        {b.internal_code && <div>INT: {b.internal_code}</div>}
+                      </div>
+                    </td>
+                    <td>
+                      {b.barcode_path ? (
+                        <button type="button" className="btn-sm" onClick={() => showBarcode(b)}>View</button>
+                      ) : (b.internal_code ? <button type="button" className="btn-sm" onClick={() => regenerateBarcode(b)}>Generate</button> : '–')}
+                    </td>
+                    {showCategories && <td>{b.category_name || '–'}</td>}
+                    <td>{b.available_copies} / {b.total_copies}</td>
+                    <td>
+                      <button type="button" className="btn-sm" onClick={() => openEdit(b)}>Edit</button>
+                      <button type="button" className="btn-sm danger" onClick={() => remove(b.id)}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="pagination">
+              <div className="pagination-info">
+                Showing {Math.min(total, (page - 1) * pageSize + 1)} to {Math.min(total, page * pageSize)} of {total} books
+              </div>
+              <div className="pagination-controls">
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage(p => p - 1)}
+                  className="btn-sm"
+                >
+                  Previous
+                </button>
+                <span className="page-num">Page {page} of {Math.ceil(total / pageSize) || 1}</span>
+                <button
+                  disabled={page >= Math.ceil(total / pageSize)}
+                  onClick={() => setPage(p => p + 1)}
+                  className="btn-sm"
+                >
+                  Next
+                </button>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(1); }}
+                  className="page-size-select"
+                >
+                  <option value={10}>10 per page</option>
+                  <option value={20}>20 per page</option>
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                </select>
+              </div>
+            </div>
+          </>
         )}
         {!loading && list.length === 0 && <p className="muted">No books found.</p>}
       </div>
@@ -300,6 +349,12 @@ export function Books({ features = {} }) {
         .gap-2 { gap: 0.5rem; }
         .btn-secondary { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 500; cursor: pointer; }
         .btn-secondary:hover { background: var(--color-surface-hover); }
+
+        .pagination { display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--color-border); flex-wrap: wrap; gap: 1rem; }
+        .pagination-info { font-size: 0.875rem; color: var(--color-text-muted); }
+        .pagination-controls { display: flex; align-items: center; gap: 0.75rem; }
+        .page-num { font-size: 0.875rem; font-weight: 500; }
+        .page-size-select { padding: 0.25rem 0.5rem; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-bg); color: var(--color-text); font-size: 0.8125rem; }
       `}</style>
     </div>
   );

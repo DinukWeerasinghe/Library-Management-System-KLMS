@@ -12,16 +12,32 @@ const authService = require('./auth-service');
 function getAll(filters = {}) {
   const db = getDatabase();
   const useCategories = isFeatureEnabled('enable_categories');
-  let sql = useCategories
-    ? `SELECT b.*, c.name AS category_name FROM Book b LEFT JOIN Category c ON b.category_id = c.id WHERE 1=1`
-    : 'SELECT b.* FROM Book b WHERE 1=1';
+  const page = parseInt(filters.page, 10) || 1;
+  const pageSize = parseInt(filters.pageSize, 10) || 20;
+  const offset = (page - 1) * pageSize;
+
+  let baseSql = useCategories
+    ? `FROM Book b LEFT JOIN Category c ON b.category_id = c.id WHERE 1=1`
+    : 'FROM Book b WHERE 1=1';
+
   const params = [];
   if (filters.categoryId) {
-    sql += ' AND b.category_id = ?';
+    baseSql += ' AND b.category_id = ?';
     params.push(filters.categoryId);
   }
-  sql += ' ORDER BY b.title';
-  return db.prepare(sql).all(...params);
+
+  // Total count
+  const countSql = `SELECT COUNT(*) as count ${baseSql}`;
+  const total = db.prepare(countSql).get(...params).count;
+
+  // Items
+  const itemsSql = useCategories
+    ? `SELECT b.*, c.name AS category_name ${baseSql} ORDER BY b.title LIMIT ? OFFSET ?`
+    : `SELECT b.* ${baseSql} ORDER BY b.title LIMIT ? OFFSET ?`;
+
+  const items = db.prepare(itemsSql).all(...params, pageSize, offset);
+
+  return { items, total, page, pageSize };
 }
 
 function getById(id) {
@@ -174,18 +190,33 @@ function deleteBook(id) {
   return { deleted: true, id };
 }
 
-function search(query) {
+function search(query, filters = {}) {
   if (!query || typeof query !== 'string' || query.trim() === '') {
-    return getAll({});
+    return getAll(filters);
   }
   const db = getDatabase();
   const useCategories = isFeatureEnabled('enable_categories');
   const term = `%${query.trim()}%`;
-  const sql = useCategories
-    ? `SELECT b.*, c.name AS category_name FROM Book b LEFT JOIN Category c ON b.category_id = c.id
-       WHERE b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? OR b.internal_code LIKE ? OR b.external_code LIKE ? ORDER BY b.title`
-    : `SELECT * FROM Book WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ? OR internal_code LIKE ? OR external_code LIKE ? ORDER BY title`;
-  return db.prepare(sql).all(term, term, term, term, term);
+  const page = parseInt(filters.page, 10) || 1;
+  const pageSize = parseInt(filters.pageSize, 10) || 20;
+  const offset = (page - 1) * pageSize;
+
+  const baseSql = useCategories
+    ? `FROM Book b LEFT JOIN Category c ON b.category_id = c.id
+       WHERE b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? OR b.internal_code LIKE ? OR b.external_code LIKE ?`
+    : `FROM Book WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ? OR internal_code LIKE ? OR external_code LIKE ?`;
+
+  const params = [term, term, term, term, term];
+
+  // Total count
+  const countSql = `SELECT COUNT(*) as count ${baseSql}`;
+  const total = db.prepare(countSql).get(...params).count;
+
+  // Items
+  const itemsSql = `SELECT ${useCategories ? 'b.*, c.name AS category_name' : '*'} ${baseSql} ORDER BY ${useCategories ? 'b.title' : 'title'} LIMIT ? OFFSET ?`;
+  const items = db.prepare(itemsSql).all(...params, pageSize, offset);
+
+  return { items, total, page, pageSize };
 }
 
 function decreaseAvailableCopies(bookId) {

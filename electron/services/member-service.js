@@ -13,14 +13,26 @@ const MEMBER_TYPES = ['Student', 'Teacher'];
 
 function getAll(filters = {}) {
   const db = getDatabase();
-  let sql = 'SELECT m.* FROM Member m WHERE 1=1';
+  const page = parseInt(filters.page, 10) || 1;
+  const pageSize = parseInt(filters.pageSize, 10) || 20;
+  const offset = (page - 1) * pageSize;
+
+  let baseSql = 'FROM Member m WHERE 1=1';
   const params = [];
   if (filters.memberType) {
-    sql += ' AND m.member_type = ?';
+    baseSql += ' AND m.member_type = ?';
     params.push(filters.memberType);
   }
-  sql += ' ORDER BY m.name';
-  return db.prepare(sql).all(...params);
+
+  // Total count
+  const countSql = `SELECT COUNT(*) as count ${baseSql}`;
+  const total = db.prepare(countSql).get(...params).count;
+
+  // Items
+  const itemsSql = `SELECT m.* ${baseSql} ORDER BY m.name LIMIT ? OFFSET ?`;
+  const items = db.prepare(itemsSql).all(...params, pageSize, offset);
+
+  return { items, total, page, pageSize };
 }
 
 function generateMemberCode() {
@@ -199,17 +211,28 @@ function deleteMember(id) {
   return { deleted: true, id };
 }
 
-function search(query) {
+function search(query, filters = {}) {
   if (!query || typeof query !== 'string' || query.trim() === '') {
-    return getAll({});
+    return getAll(filters);
   }
   const db = getDatabase();
-  const term = `% ${query.trim()}% `;
-  return db.prepare(`
-  SELECT * FROM Member
-    WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_code LIKE ?
-    ORDER BY name
-      `).all(term, term, term, term);
+  const term = `%${query.trim()}%`;
+  const page = parseInt(filters.page, 10) || 1;
+  const pageSize = parseInt(filters.pageSize, 10) || 20;
+  const offset = (page - 1) * pageSize;
+
+  const baseSql = `FROM Member WHERE name LIKE ? OR email LIKE ? OR phone LIKE ? OR member_code LIKE ?`;
+  const params = [term, term, term, term];
+
+  // Total count
+  const countSql = `SELECT COUNT(*) as count ${baseSql}`;
+  const total = db.prepare(countSql).get(...params).count;
+
+  // Items
+  const itemsSql = `SELECT * ${baseSql} ORDER BY name LIMIT ? OFFSET ?`;
+  const items = db.prepare(itemsSql).all(...params, pageSize, offset);
+
+  return { items, total, page, pageSize };
 }
 
 function isMembershipActive(memberId) {
