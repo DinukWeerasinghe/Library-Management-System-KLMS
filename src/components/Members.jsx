@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
 import { DialogService } from '../services/DialogService';
 import { ImportMemberDialog } from './ImportMemberDialog';
-import { Download } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
 
 export function Members() {
   const [list, setList] = useState([]);
@@ -186,7 +186,7 @@ export function Members() {
       <div className="view-header">
         <h2>Member Management</h2>
         <div className="header-actions">
-          <button type="button" className="btn-secondary" onClick={() => setShowImport(true)}>
+          <button type="button" className="btn-secondary flex items-center gap-2" onClick={() => setShowImport(true)}>
             <Download size={16} /> Import CSV
           </button>
           <button type="button" className="btn-primary" onClick={openCreate}>Add Member</button>
@@ -339,6 +339,11 @@ export function Members() {
         .members-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .members-view .view-header h2 { font-size: 1.25rem; }
         .header-actions { display: flex; gap: 0.5rem; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 0.5rem; }
+        .btn-secondary { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        .btn-secondary:hover { background: var(--color-surface-hover); }
         .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
         .toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }

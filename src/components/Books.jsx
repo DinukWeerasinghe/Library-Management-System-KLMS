@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
 import { DialogService } from '../services/DialogService';
 import { ImportBookDialog } from './ImportBookDialog';
-import { Upload } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
 
 export function Books({ features = {} }) {
   const [list, setList] = useState([]);
@@ -148,13 +148,11 @@ export function Books({ features = {} }) {
     <div className="books-view">
       <div className="view-header">
         <h2>Book Management</h2>
-        <div className="flex gap-2">
-          <div className="flex gap-2">
-            <button type="button" className="btn-secondary flex items-center gap-2" onClick={() => setShowImport(true)}>
-              <Upload size={16} /> Import CSV
-            </button>
-            <button type="button" className="btn-primary" onClick={openCreate}>Add Book</button>
-          </div>
+        <div className="header-actions">
+          <button type="button" className="btn-secondary flex items-center gap-2" onClick={() => setShowImport(true)}>
+            <Download size={16} /> Import CSV
+          </button>
+          <button type="button" className="btn-primary" onClick={openCreate}>Add Book</button>
         </div>
       </div>
       <div className="toolbar">
@@ -274,6 +272,7 @@ export function Books({ features = {} }) {
 
         .books-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .books-view .view-header h2 { font-size: 1.25rem; }
+        .header-actions { display: flex; gap: 0.5rem; }
         .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
         .toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
