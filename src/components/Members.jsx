@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
 import { DialogService } from '../services/DialogService';
+import { ImportMemberDialog } from './ImportMemberDialog';
+import { Download } from 'lucide-react';
 
 export function Members() {
   const [list, setList] = useState([]);
@@ -13,6 +15,7 @@ export function Members() {
   const [viewingIdCard, setViewingIdCard] = useState(null); // { id, pdfData }
   const [isGeneratingCode, setIsGeneratingCode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showImport, setShowImport] = useState(false);
 
   const load = (filters = {}) => {
     setLoading(true);
@@ -182,7 +185,12 @@ export function Members() {
     <div className="members-view">
       <div className="view-header">
         <h2>Member Management</h2>
-        <button type="button" className="btn-primary" onClick={openCreate}>Add Member</button>
+        <div className="header-actions">
+          <button type="button" className="btn-secondary" onClick={() => setShowImport(true)}>
+            <Download size={16} /> Import CSV
+          </button>
+          <button type="button" className="btn-primary" onClick={openCreate}>Add Member</button>
+        </div>
       </div>
       <div className="toolbar">
         <select value={filterType} onChange={(e) => setFilterType(e.target.value)}>
@@ -320,9 +328,17 @@ export function Members() {
         </div>
       )}
 
+      {showImport && (
+        <ImportMemberDialog
+          onClose={() => setShowImport(false)}
+          onImportComplete={() => load(filterType ? { memberType: filterType } : {})}
+        />
+      )}
+
       <style>{`
         .members-view .view-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
         .members-view .view-header h2 { font-size: 1.25rem; }
+        .header-actions { display: flex; gap: 0.5rem; }
         .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; }
         .btn-primary:hover { background: var(--color-primary-hover); }
         .toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }

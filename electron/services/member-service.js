@@ -46,11 +46,43 @@ function getByCode(code) {
   return db.prepare('SELECT * FROM Member WHERE member_code = ?').get(trimmed);
 }
 
+function findDuplicate(data) {
+  const db = getDatabase();
+  const { name, phone, email, member_code } = data;
+
+  // 1. Check member_code
+  if (member_code) {
+    const match = db.prepare('SELECT * FROM Member WHERE member_code = ?').get(member_code);
+    if (match) return { type: 'Member Code', value: member_code, member: match };
+  }
+
+  // 2. Check Phone
+  if (phone && phone.trim()) {
+    const match = db.prepare('SELECT * FROM Member WHERE phone = ?').get(phone.trim());
+    if (match) return { type: 'Phone Number', value: phone.trim(), member: match };
+  }
+
+  // 3. Check Name + Email
+  if (name && email && email.trim()) {
+    const match = db.prepare('SELECT * FROM Member WHERE lower(name) = lower(?) AND lower(email) = lower(?)').get(name.trim(), email.trim());
+    if (match) return { type: 'Name & Email', value: `${name} / ${email}`, member: match };
+  }
+
+  return null;
+}
+
 function create(data) {
   const db = getDatabase();
   const { member_type, name, email, phone, address, member_code } = data;
+
   if (!MEMBER_TYPES.includes(member_type)) {
     throw new Error('Invalid member_type. Must be Student or Teacher.');
+  }
+
+  // Check for Duplicate
+  const duplicate = findDuplicate(data);
+  if (duplicate) {
+    throw new Error(`Duplicate member detected (Matched by ${duplicate.type}: ${duplicate.value}). Member already exists as ${duplicate.member.name} (${duplicate.member.member_code}).`);
   }
 
   // Use provided code or auto-generate
@@ -199,4 +231,5 @@ module.exports = {
   generateMemberCode,
   MEMBER_TYPES,
   isMembershipActive,
+  findDuplicate,
 };

@@ -12,6 +12,8 @@ const configService = require('./services/config-service');
 const featureToggleRepo = require('./database/feature-toggle-repository');
 const memberService = require('./services/member-service');
 const importService = require('./services/import-service');
+const memberImportService = require('./services/member-import-service');
+const configRepository = require('./database/config-repository');
 const bookService = require('./services/book-service');
 const categoryService = require('./services/category-service');
 const issueService = require('./services/issue-service');
@@ -274,6 +276,50 @@ function registerIpcHandlers() {
   ipcMain.handle('books:executeImport', async (_, rows) => {
     try {
       const result = await importService.executeImport(rows);
+      return { success: true, result };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  // Member Import
+  ipcMain.handle('members:downloadTemplate', async () => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Save Member Template',
+      defaultPath: 'member_import_template.csv',
+      filters: [{ name: 'CSV File', extensions: ['csv'] }]
+    });
+
+    if (canceled || !filePath) return { canceled: true };
+
+    try {
+      const content = memberImportService.getTemplateContent();
+      fs.writeFileSync(filePath, content);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('members:previewImport', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Select Member CSV',
+      properties: ['openFile'],
+      filters: [{ name: 'CSV File', extensions: ['csv'] }]
+    });
+
+    if (canceled || !filePaths || filePaths.length === 0) return { canceled: true };
+    try {
+      const result = await memberImportService.previewImport(filePaths[0]);
+      return { success: true, result };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('members:executeImport', async (_, rows) => {
+    try {
+      const result = await memberImportService.executeImport(rows);
       return { success: true, result };
     } catch (err) {
       return { success: false, error: err.message };
