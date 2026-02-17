@@ -254,7 +254,7 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('books:import', async () => {
+  ipcMain.handle('books:previewImport', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
       title: 'Select CSV File',
       properties: ['openFile'],
@@ -264,7 +264,16 @@ function registerIpcHandlers() {
     if (canceled || !filePaths || filePaths.length === 0) return { canceled: true };
 
     try {
-      const result = await importService.importBooks(filePaths[0]);
+      const result = await importService.previewImport(filePaths[0]);
+      return { success: true, result };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('books:executeImport', async (_, rows) => {
+    try {
+      const result = await importService.executeImport(rows);
       return { success: true, result };
     } catch (err) {
       return { success: false, error: err.message };

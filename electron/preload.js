@@ -58,7 +58,8 @@ contextBridge.exposeInMainWorld('klms', {
     getByAnyCode: (code) => ipcRenderer.invoke('books:getByAnyCode', code),
     getBarcodeImage: (id) => ipcRenderer.invoke('books:getBarcodeImage', id),
     downloadTemplate: () => ipcRenderer.invoke('books:downloadTemplate'),
-    import: () => ipcRenderer.invoke('books:import'),
+    previewImport: () => ipcRenderer.invoke('books:previewImport'),
+    executeImport: (rows) => ipcRenderer.invoke('books:executeImport', rows),
   },
   // Reports
   reports: {
