@@ -15,9 +15,33 @@ logger.info(`app.isPackaged: ${app.isPackaged}`);
 logger.info(`UserData Path: ${app.getPath('userData')}`);
 
 let mainWindow;
+let splashWindow;
+
+function createSplashWindow() {
+  logger.info('Creating splash window...');
+  splashWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    transparent: true,
+    frame: false,
+    alwaysOnTop: true,
+    center: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+    show: false,
+  });
+
+  splashWindow.loadFile(path.join(__dirname, 'splash', 'splash.html'));
+
+  splashWindow.once('ready-to-show', () => {
+    splashWindow.show();
+  });
+}
 
 function createWindow() {
-  logger.info('Creating window...');
+  logger.info('Creating main window...');
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -46,6 +70,9 @@ function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     logger.info('Window ready to show');
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+    }
     mainWindow.show();
   });
 
@@ -69,105 +96,42 @@ function createWindow() {
 app.whenReady().then(async () => {
   logger.info('App ready event received');
 
+  // 1. Show Splash Immediately
+  createSplashWindow();
+
+  // 2. Start Boot Process
+  const bootService = require('./services/boot-service');
   const { registerIpcHandlers } = require('./ipc-handlers');
 
-  // COPY DB TO USERDATA IF NOT EXISTS (FIRST RUN)
-  if (app.isPackaged) {
-    const userDataPath = app.getPath('userData');
-    const targetDbPath = path.join(userDataPath, 'klms.db');
-    const targetDbDir = path.dirname(targetDbPath);
-
-    if (!fs.existsSync(targetDbPath)) {
-      logger.info('Database not found in User Data. Attempting to copy...');
-      // Ensure target directory exists
-      if (!fs.existsSync(targetDbDir)) {
-        fs.mkdirSync(targetDbDir, { recursive: true });
+  try {
+    await bootService.runBootSequence((message, progress) => {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.webContents.send('boot-status', { message, progress });
       }
+    });
 
-      // Source DB in the app bundle
-      // Structure: app.asar/electron/main.js -> ../database/klms.db
-      const sourceDbPath = path.join(__dirname, '../database/klms.db');
-      logger.info(`Looking for source DB at: ${sourceDbPath}`);
-
-      try {
-        if (fs.existsSync(sourceDbPath)) {
-          fs.copyFileSync(sourceDbPath, targetDbPath);
-          logger.info('Database copied successfully.');
-        } else {
-          logger.info('ERROR: Source database not found!');
-        }
-      } catch (err) {
-        logger.info(`ERROR: Failed to copy database: ${err.message}`);
-      }
-    } else {
-      logger.info('Database already exists in User Data.');
-    }
-  }
-
-  const { ensureDatabaseExists } = require('./database/connection');
-  try {
-    logger.info('Initializing database connection...');
-    await ensureDatabaseExists();
-    logger.info('Database connection initialized.');
-  } catch (err) {
-    logger.info(`CRITICAL ERROR: Database initialization failed: ${err.message}`);
-    // Show error dialog
-    const { dialog } = require('electron');
-    dialog.showErrorBox('Database Error', `Failed to initialize database: ${err.message}`);
-  }
-
-  try {
-    const { runMigration } = require('./database/migrate-issue-columns');
-    runMigration();
-  } catch (e) {
-    // Migration may fail if columns already exist or table missing
-    logger.info(`Migration 1 warning: ${e.message}`);
-  }
-  try {
-    const { runRbacMigration } = require('./database/migrate-rbac');
-    runRbacMigration();
-  } catch (e) {
-    logger.info(`RBAC Migration error: ${e.message}`);
-  }
-  try {
-    const { runBrandingMigration } = require('./database/migrate-branding');
-    runBrandingMigration();
-  } catch (e) {
-    logger.error(`Branding Migration error: ${e.message}`);
-  }
-
-  try {
-    const { runMemberCodeMigration } = require('./database/migrate-member-code');
-    const { runMemberBarcodeMigration } = require('./database/migrate-member-barcode');
-    const { runBookHybridIdMigration } = require('./database/migrate-book-barcode');
-    const { runMemberValidityMigration } = require('./database/migrate-member-validity');
-    const { runBookBarcodeFillMigration } = require('./database/migrate-book-barcode-fill');
-    const { runExitPinMigration } = require('./database/migrate-exit-pin');
-    const { runSessionLockMigration } = require('./database/migrate-session-lock');
-    const { runActivityLogMigration } = require('./database/migrate-activity-log');
-    const { runImportHistoryMigration } = require('./database/migrate-import-history');
-
-    runMemberCodeMigration();
-    runMemberBarcodeMigration();
-    runBookHybridIdMigration();
-    runMemberValidityMigration();
-    await runBookBarcodeFillMigration();
-    runExitPinMigration();
-    runSessionLockMigration();
-    runActivityLogMigration();
-    runImportHistoryMigration();
-
+    // 3. Register handlers after DB/Config loaded
     registerIpcHandlers();
     logger.info('IPC handlers registered.');
+
+    // 4. Show Main Window
+    createWindow();
+
   } catch (err) {
-    logger.info(`ERROR registering IPC handlers: ${err.message}`);
+    logger.info(`BOOT FAILED: ${err.message}`);
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+    }
+    dialog.showErrorBox('Critical Boot Failure', `The application failed to start: ${err.message}`);
+    app.quit();
   }
 
-  createWindow();
-
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0 && mainWindow === undefined) {
+      // This shouldn't really happen with splash logic but good for safety
+    }
   });
+
   ipcMain.handle('app:forceQuit', () => {
     app.isQuitting = true;
     app.quit();
@@ -180,6 +144,7 @@ app.whenReady().then(async () => {
   });
 
 });
+
 
 app.on('window-all-closed', () => {
   logger.info('All windows closed');
