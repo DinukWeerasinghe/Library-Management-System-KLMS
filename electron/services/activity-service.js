@@ -139,6 +139,51 @@ function logActivity(userId, actionType, description = '') {
     writeToLogFile(userId, actionType, description);
 }
 
+/**
+ * ARCHIVE LOGIC
+ * Runs on startup to consolidate logs from previous months.
+ */
+function archiveOldLogs() {
+    try {
+        ensureLogDir();
+        const files = fs.readdirSync(LOG_DIR);
+        const today = new Date();
+        const currentMonthStr = today.toISOString().slice(0, 7); // YYYY-MM
+
+        files.forEach(file => {
+            // Match YYYY-MM-DD.log
+            if (!file.match(/^\d{4}-\d{2}-\d{2}\.log$/)) return;
+
+            const fileMonthStr = file.slice(0, 7); // YYYY-MM
+
+            // If file is from a previous month (not current month)
+            if (fileMonthStr < currentMonthStr) {
+                const sourcePath = path.join(LOG_DIR, file);
+                const archiveDir = path.join(LOG_DIR, 'archive');
+                const archiveFile = path.join(archiveDir, `Activity_${fileMonthStr}.txt`);
+
+                // Ensure archive dir exists
+                if (!fs.existsSync(archiveDir)) {
+                    fs.mkdirSync(archiveDir, { recursive: true });
+                }
+
+                // Append content
+                const content = fs.readFileSync(sourcePath, 'utf8');
+                fs.appendFileSync(archiveFile, content + '\n');
+
+                // Delete original
+                fs.unlinkSync(sourcePath);
+                logger.info(`Archived log file: ${file} -> ${path.basename(archiveFile)}`);
+            }
+        });
+    } catch (err) {
+        logger.error(`Failed to archive logs: ${err.message}`);
+    }
+}
+
+// Run archival process after a short delay on startup
+setTimeout(archiveOldLogs, 5000);
+
 module.exports = {
     logSessionStart,
     logSessionEnd,
