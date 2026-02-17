@@ -11,6 +11,7 @@ const backupService = require('./services/backup-service');
 const configService = require('./services/config-service');
 const featureToggleRepo = require('./database/feature-toggle-repository');
 const memberService = require('./services/member-service');
+const importService = require('./services/import-service');
 const bookService = require('./services/book-service');
 const categoryService = require('./services/category-service');
 const issueService = require('./services/issue-service');
@@ -226,8 +227,8 @@ function registerIpcHandlers() {
   ipcMain.handle('books:delete', async (_, id) => bookService.delete(id));
   ipcMain.handle('books:search', async (_, query) => bookService.search(query));
   ipcMain.handle('books:getByAnyCode', async (_, code) => bookService.getBookByAnyCode(code));
-  ipcMain.handle('books:getBarcodeImage', async (_, id) => {
-    const book = await bookService.getById(id);
+  ipcMain.handle('books:getBarcodeImage', async (_, bookId) => {
+    const book = await bookService.getById(bookId);
     if (book && book.barcode_path && fs.existsSync(book.barcode_path)) {
       const buffer = fs.readFileSync(book.barcode_path);
       return `data:image/png;base64,${buffer.toString('base64')}`;
@@ -235,7 +236,42 @@ function registerIpcHandlers() {
     return null;
   });
 
-  // --- Backup: export DB file ---
+  // --- Book Import ---
+  ipcMain.handle('books:downloadTemplate', async () => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Save Import Template',
+      defaultPath: 'klms_book_import_template.csv',
+      filters: [{ name: 'CSV File', extensions: ['csv'] }]
+    });
+
+    if (canceled || !filePath) return { success: false };
+
+    try {
+      fs.writeFileSync(filePath, importService.getTemplateContent());
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('books:import', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Select CSV File',
+      properties: ['openFile'],
+      filters: [{ name: 'CSV File', extensions: ['csv'] }]
+    });
+
+    if (canceled || !filePaths || filePaths.length === 0) return { canceled: true };
+
+    try {
+      const result = await importService.importBooks(filePaths[0]);
+      return { success: true, result };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  });
+
+  // --- Categories ---
   ipcMain.handle('backup:exportDb', async () => {
     const dbPath = getDbPath();
     const defaultName = `klms-backup-${new Date().toISOString().slice(0, 10)}.db`;

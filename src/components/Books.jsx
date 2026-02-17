@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useScanDetection } from '../hooks/useScanDetection';
 import { DialogService } from '../services/DialogService';
+import { ImportBookDialog } from './ImportBookDialog';
+import { Upload } from 'lucide-react';
 
 export function Books({ features = {} }) {
   const [list, setList] = useState([]);
@@ -10,6 +12,7 @@ export function Books({ features = {} }) {
   const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
   const [categories, setCategories] = useState([]);
   const [viewingBarcode, setViewingBarcode] = useState(null);
+  const [showImport, setShowImport] = useState(false);
   const showCategories = features.enable_categories;
 
   useEffect(() => {
@@ -145,7 +148,14 @@ export function Books({ features = {} }) {
     <div className="books-view">
       <div className="view-header">
         <h2>Book Management</h2>
-        <button type="button" className="btn-primary" onClick={openCreate}>Add Book</button>
+        <div className="flex gap-2">
+          <div className="flex gap-2">
+            <button type="button" className="btn-secondary flex items-center gap-2" onClick={() => setShowImport(true)}>
+              <Upload size={16} /> Import CSV
+            </button>
+            <button type="button" className="btn-primary" onClick={openCreate}>Add Book</button>
+          </div>
+        </div>
       </div>
       <div className="toolbar">
         <input
@@ -243,6 +253,16 @@ export function Books({ features = {} }) {
         </div>
       )}
 
+      {showImport && (
+        <ImportBookDialog
+          onClose={() => setShowImport(false)}
+          onImportComplete={() => {
+            loadBooks();
+            // Optional: Don't close immediately so user can see result
+          }}
+        />
+      )}
+
       <style>{`
         .barcode-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
         .barcode-modal { background: white; padding: 2rem; border-radius: var(--radius); max-width: 400px; width: 90%; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); color: #333; }
@@ -275,6 +295,12 @@ export function Books({ features = {} }) {
         .btn-sm:hover { background: var(--color-surface-hover); }
         .btn-sm.danger { color: var(--color-danger); }
         .muted { color: var(--color-text-muted); margin-top: 0.5rem; }
+        
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 0.5rem; }
+        .btn-secondary { background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 500; cursor: pointer; }
+        .btn-secondary:hover { background: var(--color-surface-hover); }
       `}</style>
     </div>
   );
