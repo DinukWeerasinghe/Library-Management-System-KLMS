@@ -1,6 +1,6 @@
 /**
  * Import Service
- * Handles bulk import of books from CSV files with duplicate detection.
+ * Handles bulk import of books from CSV files.
  */
 const fs = require('fs');
 const bookService = require('./book-service');
@@ -9,10 +9,10 @@ const logger = require('../logger');
 const { getDatabase } = require('../database/connection');
 
 /**
- * Generates the CSV template content.
+ * Generates the CSV template content for books.
  */
 function getTemplateContent() {
-    return 'title,author,isbn,category,total_copies\n"Example Book","John Doe","978-3-16-148410-0","Fiction",5';
+    return 'title,author,isbn,category,total_copies,external_code\n"Sample Book","John Doe","9781234567890","Fiction",5,"EXT001"';
 }
 
 /**
@@ -40,19 +40,11 @@ function parseCsvLine(line) {
 
 /**
  * Parses and Previews the import file.
- * Returns detailed row analysis without modifying DB.
+ * @param {string} filePath 
  */
 async function previewImport(filePath) {
     const rows = [];
     const summary = { new: 0, merge: 0, invalid: 0 };
-    const db = getDatabase();
-
-    // Prepare statements for duplicate detection
-    const stmtCheckIsbn = db.prepare('SELECT id, title, author, total_copies FROM Book WHERE isbn = ?');
-    const stmtCheckTitleAuthor = db.prepare('SELECT id, title, author, total_copies FROM Book WHERE lower(title) = lower(?) AND lower(author) = lower(?)');
-    // Also check for existing external code if ISBN is used there? 
-    // Requirement says: "If ISBN exists... Find Book where isbn = csv.isbn"
-    // Requirement says: "If ISBN Empty... Check title + author"
 
     try {
         const content = fs.readFileSync(filePath, 'utf8');
@@ -62,13 +54,17 @@ async function previewImport(filePath) {
             throw new Error('File is empty or missing headers.');
         }
 
+        const db = getDatabase();
+        const stmtCheckIsbn = db.prepare('SELECT id, title FROM Book WHERE isbn = ?');
+        const stmtCheckTitleAuthor = db.prepare('SELECT id, title FROM Book WHERE title = ? AND author = ?');
+
         const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
         if (!headers.includes('title')) throw new Error('Missing "title" column.');
 
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i];
             const resultRow = {
-                id: i, // row ID for frontend key
+                id: i,
                 rawLine: line,
                 status: 'NEW',
                 message: '',
@@ -114,18 +110,8 @@ async function previewImport(filePath) {
 
                 // 2. Check Title+Author (if no ISBN match yet)
                 if (!match) {
-                    // Only strictly match if author is present to avoid false positives? 
-                    // Requirement: "If ISBN Empty... Check title + author"
-                    // Assuming if ISBN is provided but NOT found, we count it as NEW, or do we double check title?
-                    // Requirement implies Step 2 is "IF ISBN EMPTY". 
-                    // But usually duplicate check cascades. 
-                    // Let's follow requirement strictly: "Step 2: IF ISBN EMPTY -> Check title + author"
-                    // So if ISBN is present but not found, we create NEW (assuming distinct edition).
-
                     if (!rowData.isbn && rowData.title) {
-                        const auth = rowData.author || ''; // Handle empty author match?
-                        // If author is empty in DB and CSV?
-                        // Let's stick to simple logic: Title + Author must match.
+                        const auth = rowData.author || '';
                         match = stmtCheckTitleAuthor.get(rowData.title, auth);
                         if (match) {
                             resultRow.status = 'MERGE';
@@ -149,7 +135,7 @@ async function previewImport(filePath) {
         }
 
     } catch (err) {
-        logger.error(`Preview failed: ${err.message}`);
+        logger.error(`Import Preview failed: ${err.message}`);
         throw err;
     }
 
@@ -167,24 +153,35 @@ async function executeImport(rows) {
     const allCategories = categoryService.getAll();
     const categoryMap = new Map(allCategories.map(c => [c.name.toLowerCase(), c.id]));
 
+    // 1. Create ImportBatch
+    const db = getDatabase();
+    const batchResult = db.prepare('INSERT INTO ImportBatch (type, row_count) VALUES (?, ?)').run('BOOK', 0);
+    const batchId = Number(batchResult.lastInsertRowid);
+
+    logger.info(`Processing ${rows.length} rows for BOOK import batch #${batchId}`);
+
     for (const row of rows) {
-        if (row.status === 'INVALID') continue;
+        if (row.status === 'INVALID') {
+            logger.debug(`Skipping row ${row.id}: status is INVALID`);
+            continue;
+        }
 
         try {
             const data = row.data;
 
             if (row.status === 'MERGE') {
+                logger.debug(`Merging book: ${data.title}, bookId: ${row.existingBook.id}`);
                 // MERGE: Update existing book
                 const bookId = row.existingBook.id;
                 const newCopies = data.total_copies;
 
                 // Update total and available copies
-                const db = getDatabase();
                 db.prepare('UPDATE Book SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE id = ?')
                     .run(newCopies, newCopies, bookId);
 
-                // Log?
+                stats.success++;
             } else if (row.status === 'NEW') {
+                logger.info(`Creating book: ${data.title}, batch_id: ${batchId}`);
                 // NEW: Create book
                 // Category Logic
                 let categoryId = null;
@@ -203,21 +200,23 @@ async function executeImport(rows) {
                 }
 
                 bookService.create({
-                    title: data.title,
-                    author: data.author,
-                    isbn: data.isbn || null,
+                    ...data,
                     category_id: categoryId,
-                    total_copies: data.total_copies,
-                    external_code: data.isbn || null
+                    batch_id: batchId
                 });
+                stats.success++;
+            } else {
+                logger.debug(`Unknown row status ${row.status} for row ${row.id}`);
             }
-            stats.success++;
         } catch (err) {
             stats.failed++;
             stats.errors.push({ row: row.id, message: err.message });
             logger.error(`Import execution failed for row ${row.id}: ${err.message}`);
         }
     }
+
+    // Update batch with final successful count
+    db.prepare('UPDATE ImportBatch SET row_count = ? WHERE id = ?').run(stats.success, batchId);
 
     return stats;
 }

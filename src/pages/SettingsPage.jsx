@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DialogService } from '../services/DialogService';
-import { Upload, Download, Database } from 'lucide-react';
+import { Upload, Download, Database, History, RotateCcw } from 'lucide-react';
 
 const FEATURE_KEYS = [
   { key: 'enable_fine', label: 'Enable fine calculation' },
@@ -41,6 +41,8 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
   const [theme, setTheme] = useState({});
   const [loading, setLoading] = useState(true);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
+  const [importHistory, setImportHistory] = useState([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const isAdmin = session?.role === 'ADMIN';
 
@@ -62,7 +64,23 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       })
       .catch(() => DialogService.showError('Failed to load settings'))
       .finally(() => setLoading(false));
-  }, []);
+
+    if (isAdmin) {
+      loadImportHistory();
+    }
+  }, [isAdmin]);
+
+  const loadImportHistory = async () => {
+    setHistoryLoading(true);
+    try {
+      const history = await window.klms.import.getHistory();
+      setImportHistory(history || []);
+    } catch (err) {
+      console.error('Failed to load import history:', err);
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   // Apply theme preview
   useEffect(() => {
@@ -179,6 +197,26 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       }
     } catch (err) {
       DialogService.showError(err.message || 'Failed to change password.');
+    }
+  };
+
+  const handleRollback = async (batchId) => {
+    const confirmed = await DialogService.confirm(
+      'Rollback Import',
+      'Are you sure you want to rollback this import? All items added in this batch will be permanently deleted.'
+    );
+    if (!confirmed) return;
+
+    try {
+      const result = await window.klms.import.rollback(batchId);
+      if (result.success) {
+        DialogService.showSuccess('Import rolled back successfully.');
+        loadImportHistory();
+      } else {
+        DialogService.showError(result.error || 'Failed to rollback import.');
+      }
+    } catch (err) {
+      DialogService.showError(err.message || 'Rollback failed. Some items may have active history.');
     }
   };
 
@@ -435,6 +473,59 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         </div>
       </section>
 
+      {/* Import History (Admin Only) */}
+      {isAdmin && (
+        <section className="settings-section">
+          <h3 className="flex items-center gap-2">
+            <History size={20} className="text-[var(--primary-color)]" />
+            Import History & Rollback
+          </h3>
+          <p className="muted">Review previous bulk imports and rollback if necessary.</p>
+
+          {historyLoading ? (
+            <p>Loading history...</p>
+          ) : importHistory.length === 0 ? (
+            <p className="muted text-center py-8 bg-[var(--color-bg)] rounded border border-dashed border-[var(--color-border)]">
+              No import history found.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              {importHistory.map(batch => (
+                <div key={batch.id} className="p-4 rounded border border-[var(--color-border)] bg-[var(--background-color)] flex flex-col gap-3 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${batch.type === 'BOOK' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                          }`}>
+                          {batch.type} IMPORT
+                        </span>
+                        <span className="text-xs muted">#{batch.id}</span>
+                      </div>
+                      <h4 className="font-semibold text-sm">{batch.row_count} records processed</h4>
+                    </div>
+                    <button
+                      className="rollback-btn"
+                      title="Rollback this import"
+                      onClick={() => handleRollback(batch.id)}
+                    >
+                      <RotateCcw size={14} />
+                      Rollback
+                    </button>
+                  </div>
+                  <div className="flex items-center justify-between text-xs muted mt-auto pt-2 border-t border-[var(--color-border)] border-opacity-50">
+                    <span className="flex items-center gap-1">
+                      <History size={12} />
+                      {new Date(batch.created_at).toLocaleDateString()}
+                    </span>
+                    <span>{new Date(batch.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <style>{`
         .settings-page h2 { font-size: 1.25rem; margin-bottom: 1rem; }
         .settings-section {
@@ -485,6 +576,25 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         .logo-preview-img { height: 40px; border-radius: 4px; border: 1px solid var(--color-border); }
         .btn-primary { background: var(--button-color); color: var(--header-text-color); border: none; padding: 0.5rem 1rem; border-radius: var(--radius); font-weight: 600; cursor: pointer; }
         .btn-primary:hover { background: var(--button-hover-color); }
+        .rollback-btn {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.4rem 0.75rem;
+          background: #fee2e2;
+          color: #dc2626;
+          border: 1px solid #fecaca;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .rollback-btn:hover {
+          background: #fecaca;
+          color: #b91c1c;
+          transform: translateY(-1px);
+        }
       `}</style>
     </div>
   );

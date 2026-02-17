@@ -121,17 +121,26 @@ async function previewImport(filePath) {
     return { rows, summary };
 }
 
-/**
- * Executes the member import.
- */
 async function executeImport(rows) {
     const stats = { success: 0, failed: 0, errors: [] };
 
+    // 1. Create ImportBatch
+    const db = getDatabase();
+    const batchResult = db.prepare('INSERT INTO ImportBatch (type, row_count) VALUES (?, ?)').run('MEMBER', 0);
+    const batchId = Number(batchResult.lastInsertRowid);
+    logger.info(`Processing ${rows.length} rows for MEMBER import batch #${batchId}`);
     for (const row of rows) {
-        if (row.status !== 'NEW') continue;
+        if (row.status !== 'NEW') {
+            logger.debug(`Skipping row ${row.id}: status is ${row.status}`);
+            continue;
+        }
 
         try {
-            await memberService.create(row.data);
+            logger.info(`Creating member: ${row.data.name}, batch_id: ${batchId}`);
+            await memberService.create({
+                ...row.data,
+                batch_id: batchId
+            });
             stats.success++;
         } catch (err) {
             stats.failed++;
@@ -139,6 +148,9 @@ async function executeImport(rows) {
             logger.error(`Member Import failed for row ${row.id}: ${err.message}`);
         }
     }
+
+    // Update batch with final successful count
+    db.prepare('UPDATE ImportBatch SET row_count = ? WHERE id = ?').run(stats.success, batchId);
 
     return stats;
 }

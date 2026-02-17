@@ -145,6 +145,7 @@ app.whenReady().then(async () => {
     const { runExitPinMigration } = require('./database/migrate-exit-pin');
     const { runSessionLockMigration } = require('./database/migrate-session-lock');
     const { runActivityLogMigration } = require('./database/migrate-activity-log');
+    const { runImportHistoryMigration } = require('./database/migrate-import-history');
 
     runMemberCodeMigration();
     runMemberBarcodeMigration();
@@ -154,6 +155,7 @@ app.whenReady().then(async () => {
     runExitPinMigration();
     runSessionLockMigration();
     runActivityLogMigration();
+    runImportHistoryMigration();
 
     registerIpcHandlers();
     logger.info('IPC handlers registered.');

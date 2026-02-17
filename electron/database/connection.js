@@ -34,10 +34,15 @@ function wrapDb(nativeDb, onWrite) {
         run(...params) {
           try {
             nativeDb.run(sql, params);
-            if (onWrite) onWrite();
-            const result = nativeDb.exec('SELECT last_insert_rowid() as id');
+
+            // CRITICAL: Fetch metadata BEFORE onWrite (db.export() resets last_insert_rowid)
+            const result = nativeDb.exec('SELECT last_insert_rowid() as id, changes() as changes');
             const id = result.length && result[0].values.length ? result[0].values[0][0] : 0;
-            return { lastInsertRowid: id };
+            const changes = result.length && result[0].values.length ? result[0].values[0][1] : 0;
+
+            if (onWrite) onWrite();
+
+            return { lastInsertRowid: id, changes };
           } catch (e) {
             if (onWrite && /^\s*(INSERT|UPDATE|DELETE)/i.test(sql.trim())) onWrite();
             throw e;
@@ -72,10 +77,14 @@ function wrapDb(nativeDb, onWrite) {
     },
     run(sql, params = []) {
       nativeDb.run(sql, params);
-      if (onWrite && /^\s*(INSERT|UPDATE|DELETE)/i.test(sql.trim())) onWrite();
-      const result = nativeDb.exec('SELECT last_insert_rowid() as id');
+
+      const result = nativeDb.exec('SELECT last_insert_rowid() as id, changes() as changes');
       const id = result.length && result[0].values.length ? result[0].values[0][0] : 0;
-      return { lastInsertRowid: id };
+      const changes = result.length && result[0].values.length ? result[0].values[0][1] : 0;
+
+      if (onWrite && /^\s*(INSERT|UPDATE|DELETE)/i.test(sql.trim())) onWrite();
+
+      return { lastInsertRowid: id, changes };
     },
   };
 }

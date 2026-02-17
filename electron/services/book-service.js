@@ -77,7 +77,7 @@ function generateBookCode() {
 function create(data) {
   const db = getDatabase();
   const useCategories = isFeatureEnabled('enable_categories');
-  const { title, author, isbn, category_id, total_copies, external_code } = data;
+  const { title, author, isbn, category_id, total_copies, external_code, batch_id } = data;
   const copies = Math.max(1, parseInt(total_copies, 10) || 1);
   const catId = useCategories && category_id ? category_id : null;
 
@@ -94,8 +94,8 @@ function create(data) {
   }
 
   const stmt = db.prepare(`
-    INSERT INTO Book (title, author, isbn, category_id, external_code, internal_code, total_copies, available_copies)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO Book (title, author, isbn, category_id, external_code, internal_code, total_copies, available_copies, batch_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     title || '',
@@ -105,7 +105,8 @@ function create(data) {
     finalExternalCode,
     finalInternalCode,
     copies,
-    copies
+    copies,
+    batch_id || null
   );
 
   const newId = result.lastInsertRowid;
@@ -133,7 +134,7 @@ function update(id, data) {
   const existing = getById(id);
   if (!existing) throw new Error('Book not found');
   const useCategories = isFeatureEnabled('enable_categories');
-  const { title, author, isbn, category_id, total_copies, external_code } = data;
+  const { title, author, isbn, category_id, total_copies, external_code, batch_id } = data;
   let available = existing.available_copies;
 
   const total = total_copies !== undefined ? Math.max(1, parseInt(total_copies, 10) || 1) : existing.total_copies;

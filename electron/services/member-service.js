@@ -85,7 +85,7 @@ function findDuplicate(data) {
 
 function create(data) {
   const db = getDatabase();
-  const { member_type, name, email, phone, address, member_code } = data;
+  const { member_type, name, email, phone, address, member_code, batch_id } = data;
 
   if (!MEMBER_TYPES.includes(member_type)) {
     throw new Error('Invalid member_type. Must be Student or Teacher.');
@@ -110,8 +110,8 @@ function create(data) {
   const expiryDateStr = expiryDate.toISOString().split('T')[0];
 
   const stmt = db.prepare(`
-    INSERT INTO Member (member_type, name, email, phone, address, member_code, barcode_path, registration_date, expiry_date, registration_fee_paid)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO Member (member_type, name, email, phone, address, member_code, barcode_path, registration_date, expiry_date, registration_fee_paid, batch_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const result = stmt.run(
@@ -124,7 +124,8 @@ function create(data) {
     null, // barcode_path set later
     regDateStr,
     expiryDateStr,
-    regFee
+    regFee,
+    batch_id || null
   );
 
   const newId = result.lastInsertRowid;

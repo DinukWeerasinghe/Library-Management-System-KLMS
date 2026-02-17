@@ -7,7 +7,7 @@ import React from 'react';
  * @param {string} message - Message text
  * @param {function} onClose - Called when user dismisses (e.g. OK click or backdrop)
  */
-export function AppDialog({ open, type = 'info', message = '', onClose, onConfirm }) {
+export function AppDialog({ open, type = 'info', title: propTitle, message = '', onClose, onConfirm }) {
   if (!open) return null;
 
   const titles = {
@@ -18,7 +18,7 @@ export function AppDialog({ open, type = 'info', message = '', onClose, onConfir
     info: 'Information',
     loading: 'Processing...',
   };
-  const title = titles[type] || 'Message';
+  const title = propTitle || titles[type] || 'Message';
 
   return (
     <div className="app-dialog-overlay" onClick={type === 'loading' ? undefined : onClose} role="presentation">

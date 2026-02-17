@@ -38,6 +38,19 @@ class DialogServiceEmitter {
         this.emit({ open: true, type: 'confirm', message, onConfirm });
     }
 
+    confirm(title, message) {
+        return new Promise((resolve) => {
+            this.emit({
+                open: true,
+                type: 'confirm',
+                title: title || 'Confirm',
+                message,
+                onConfirm: () => resolve(true),
+                onCancel: () => resolve(false)
+            });
+        });
+    }
+
     close() {
         this.emit({ open: false });
     }

@@ -19,6 +19,7 @@ const categoryService = require('./services/category-service');
 const issueService = require('./services/issue-service');
 const reportService = require('./services/report-service');
 const userService = require('./services/user-service');
+const rollbackService = require('./services/rollback-service');
 const themeService = require('./services/ThemeService');
 const idCardService = require('./services/id-card-service');
 const logger = require('./logger');
@@ -222,6 +223,22 @@ function registerIpcHandlers() {
   ipcMain.handle('books:getAll', async (_, filters) => bookService.getAll(filters || {}));
   ipcMain.handle('books:search', async (_, query, filters) => bookService.search(query, filters || {}));
   ipcMain.handle('books:getByAnyCode', async (_, code) => bookService.getBookByAnyCode(code));
+  ipcMain.handle('books:getById', async (_, id) => bookService.getById(id));
+  ipcMain.handle('books:create', async (_, data) => {
+    const session = authService.getSession();
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'LIBRARIAN')) throw new Error('Unauthorized');
+    return bookService.create(data);
+  });
+  ipcMain.handle('books:update', async (_, id, data) => {
+    const session = authService.getSession();
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'LIBRARIAN')) throw new Error('Unauthorized');
+    return bookService.update(id, data);
+  });
+  ipcMain.handle('books:delete', async (_, id) => {
+    const session = authService.getSession();
+    if (!session || (session.role !== 'ADMIN' && session.role !== 'LIBRARIAN')) throw new Error('Unauthorized');
+    return bookService.delete(id);
+  });
   ipcMain.handle('books:getBarcodeImage', async (_, bookId) => {
     const book = await bookService.getById(bookId);
     if (book && book.barcode_path && fs.existsSync(book.barcode_path)) {
@@ -335,6 +352,19 @@ function registerIpcHandlers() {
     } catch (err) {
       return { success: false, error: err.message };
     }
+  });
+
+  // --- Rollback / Import History ---
+  ipcMain.handle('import:getHistory', async () => {
+    const session = authService.getSession();
+    if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+    return rollbackService.listBatches();
+  });
+
+  ipcMain.handle('import:rollback', async (_, batchId) => {
+    const session = authService.getSession();
+    if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
+    return rollbackService.rollbackImport(batchId);
   });
 }
 

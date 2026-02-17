@@ -13,12 +13,7 @@ export function DialogProvider() {
     useEffect(() => {
         const unsubscribe = DialogService.subscribe((event) => {
             if (event.open) {
-                setState({
-                    open: true,
-                    type: event.type,
-                    message: event.message,
-                    onConfirm: event.onConfirm
-                });
+                setState({ ...event });
             } else {
                 setState(prev => ({ ...prev, open: false }));
             }
@@ -28,6 +23,9 @@ export function DialogProvider() {
     }, []);
 
     const handleClose = () => {
+        if (state.onCancel) {
+            state.onCancel();
+        }
         setState(prev => ({ ...prev, open: false }));
     };
 
@@ -40,9 +38,7 @@ export function DialogProvider() {
 
     return (
         <AppDialog
-            open={state.open}
-            type={state.type}
-            message={state.message}
+            {...state}
             onClose={handleClose}
             onConfirm={handleConfirm}
         />

@@ -100,5 +100,9 @@ contextBridge.exposeInMainWorld('klms', {
   backup: {
     create: () => ipcRenderer.invoke('backup:create'),
     restore: () => ipcRenderer.invoke('backup:restore')
+  },
+  import: {
+    getHistory: () => ipcRenderer.invoke('import:getHistory'),
+    rollback: (batchId) => ipcRenderer.invoke('import:rollback', batchId)
   }
 });
