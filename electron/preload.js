@@ -71,7 +71,8 @@ contextBridge.exposeInMainWorld('klms', {
   },
   // Backup
   backup: {
-    exportDb: (filePath) => ipcRenderer.invoke('backup:exportDb', filePath),
+    create: () => ipcRenderer.invoke('backup:create'),
+    restore: () => ipcRenderer.invoke('backup:restore'),
   },
   // Users
   users: {

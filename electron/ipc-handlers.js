@@ -342,23 +342,7 @@ function registerIpcHandlers() {
     }
   });
 
-  // --- Categories ---
-  ipcMain.handle('backup:exportDb', async () => {
-    const dbPath = getDbPath();
-    const defaultName = `klms-backup-${new Date().toISOString().slice(0, 10)}.db`;
-    const { filePath, canceled } = await dialog.showSaveDialog({
-      title: 'Export database backup',
-      defaultPath: path.join(require('electron').app.getPath('documents'), defaultName),
-      filters: [{ name: 'SQLite Database', extensions: ['db'] }],
-    });
-    if (canceled || !filePath) return { success: false, canceled: true };
-    try {
-      fs.copyFileSync(dbPath, filePath);
-      return { success: true, path: filePath };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  });
+
 
   // --- Rollback / Import History ---
   ipcMain.handle('import:getHistory', async () => {
