@@ -56,6 +56,7 @@ async function loadDatabase() {
     const { runSessionLockMigration } = require('../database/migrate-session-lock');
     const { runActivityLogMigration } = require('../database/migrate-activity-log');
     const { runImportHistoryMigration } = require('../database/migrate-import-history');
+    const { runVersionMigration } = require('../database/migrate-version');
 
     runMigration();
     runRbacMigration();
@@ -69,6 +70,7 @@ async function loadDatabase() {
     runSessionLockMigration();
     runActivityLogMigration();
     runImportHistoryMigration();
+    await runVersionMigration();
 }
 
 async function loadConfig() {

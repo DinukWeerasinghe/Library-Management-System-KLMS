@@ -22,10 +22,16 @@ const userService = require('./services/user-service');
 const rollbackService = require('./services/rollback-service');
 const themeService = require('./services/ThemeService');
 const idCardService = require('./services/id-card-service');
+const versionService = require('./services/version-service');
 const logger = require('./logger');
 
 function registerIpcHandlers() {
   // ensureDatabaseExists() is awaited in main.js before this runs
+
+  // --- App Meta / Version ---
+  ipcMain.handle('app:getVersion', async () => versionService.getCurrentVersion());
+  ipcMain.handle('app:getBuildInfo', async () => versionService.getAppBuildInfo());
+  ipcMain.handle('app:checkForUpdate', async () => versionService.checkForUpdate());
 
   // --- Auth ---
   ipcMain.handle('auth:login', async (_, username, password) => {

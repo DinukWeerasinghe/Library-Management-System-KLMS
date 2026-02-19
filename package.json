@@ -1,7 +1,7 @@
 {
   "name": "klms",
   "version": "1.0.0",
-  "description": "Kumaradasa Library Management System - Offline Desktop Application",
+  "description": "Library Management System - Offline Desktop Application",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
@@ -21,7 +21,7 @@
     "offline",
     "sqlite"
   ],
-  "author": "",
+  "author": "Dinuka Weerasinghe",
   "license": "MIT",
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -42,7 +42,8 @@
   },
   "build": {
     "appId": "com.klms.kumaradasa",
-    "productName": "KLMS - Kumaradasa Library Management System",
+    "productName": "KLMS",
+    "artifactName": "${productName}_v${version}_Setup.${ext}",
     "directories": {
       "output": "dist"
     },
@@ -50,14 +51,24 @@
       "dist-electron/**/*",
       "dist/**/*",
       "electron/**/*",
-      "database/**/*"
+      "database/**/*",
+      "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "include": "electron/build/installer.nsh",
+      "deleteAppDataOnUninstall": false,
+      "guid": "KLMS-KUMARADASA-OFFLINE",
+      "perMachine": false
     }
   }
 }

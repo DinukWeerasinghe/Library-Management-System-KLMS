@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DialogService } from '../services/DialogService';
-import { Upload, Download, Database, History, RotateCcw } from 'lucide-react';
+import { Upload, Download, Database, History, RotateCcw, Info } from 'lucide-react';
 
 const FEATURE_KEYS = [
   { key: 'enable_fine', label: 'Enable fine calculation' },
@@ -43,6 +43,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [importHistory, setImportHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [version, setVersion] = useState({ version_name: '...', version_code: '' });
 
   const isAdmin = session?.role === 'ADMIN';
 
@@ -55,11 +56,13 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       window.klms.config.getAll(),
       window.klms.features.getAll(),
       window.klms.branding.getTheme(),
+      window.klms.app.getVersion(),
     ])
-      .then(([c, f, t]) => {
+      .then(([c, f, t, v]) => {
         setConfig(c || {});
         setFeatures(f || {});
         setTheme(t || {});
+        setVersion(v || { version_name: 'Unknown', version_code: 0 });
         if (onFeaturesChange) onFeaturesChange(f);
       })
       .catch(() => DialogService.showError('Failed to load settings'))
@@ -526,6 +529,28 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
         </section>
       )}
 
+      {/* About / Version Info */}
+      <section className="settings-section">
+        <h3 className="flex items-center gap-2">
+          <Info size={20} className="text-[var(--primary-color)]" />
+          About
+        </h3>
+        <p className="muted">Application version and build information.</p>
+        
+        <div className="version-info" style={{ marginTop: '1rem' }}>
+          <div className="version-item">
+            <span className="version-label">Version:</span>
+            <span className="version-value">{version.version_name || 'Unknown'}</span>
+          </div>
+          {version.version_code && (
+            <div className="version-item">
+              <span className="version-label">Version Code:</span>
+              <span className="version-value">{version.version_code}</span>
+            </div>
+          )}
+        </div>
+      </section>
+
       <style>{`
         .settings-page h2 { font-size: 1.25rem; margin-bottom: 1rem; }
         .settings-section {
@@ -594,6 +619,36 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           background: #fecaca;
           color: #b91c1c;
           transform: translateY(-1px);
+        }
+        .version-info {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+          padding: 1rem;
+          background: var(--color-bg);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius);
+        }
+        .version-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.5rem 0;
+          border-bottom: 1px solid var(--color-border);
+        }
+        .version-item:last-child {
+          border-bottom: none;
+        }
+        .version-label {
+          font-size: 0.875rem;
+          color: var(--color-text-muted);
+          font-weight: 500;
+        }
+        .version-value {
+          font-size: 0.875rem;
+          color: var(--color-text);
+          font-weight: 600;
+          font-family: monospace;
         }
       `}</style>
     </div>

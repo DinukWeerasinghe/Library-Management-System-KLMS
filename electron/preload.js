@@ -97,12 +97,13 @@ contextBridge.exposeInMainWorld('klms', {
     logLock: () => ipcRenderer.invoke('app:logLock'),
     logUnlock: () => ipcRenderer.invoke('app:logUnlock')
   },
-  backup: {
-    create: () => ipcRenderer.invoke('backup:create'),
-    restore: () => ipcRenderer.invoke('backup:restore')
-  },
   import: {
     getHistory: () => ipcRenderer.invoke('import:getHistory'),
     rollback: (batchId) => ipcRenderer.invoke('import:rollback', batchId)
+  },
+  app: {
+    getVersion: () => ipcRenderer.invoke('app:getVersion'),
+    getBuildInfo: () => ipcRenderer.invoke('app:getBuildInfo'),
+    checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate')
   }
 });
