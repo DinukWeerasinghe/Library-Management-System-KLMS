@@ -101,7 +101,12 @@ export default function App() {
   }
 
   if (!session) {
-    return <Login onSuccess={handleLogin} />;
+    return (
+      <>
+        <Login onSuccess={handleLogin} />
+        <DialogProvider />
+      </>
+    );
   }
 
   return (
