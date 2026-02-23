@@ -111,21 +111,19 @@ export default function App() {
     );
   }
 
-  if (!session) {
-    return (
-      <>
-        <Login onSuccess={handleLogin} />
-        <DialogProvider />
-      </>
-    );
-  }
-
   return (
     <>
-      <Dashboard session={session} onLogout={handleLogout} />
+      {session ? (
+        <Dashboard session={session} onLogout={handleLogout} />
+      ) : (
+        <Login onSuccess={handleLogin} />
+      )}
+
       <DialogProvider />
       <ExitPinGate />
+
       {locked && <LockScreen onUnlock={() => setLocked(false)} />}
+
       {(!licenseStatus.isValid || showActivationManual) && (
         <ActivationDialog
           canClose={licenseStatus.isValid && showActivationManual}
