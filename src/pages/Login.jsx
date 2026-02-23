@@ -125,13 +125,9 @@ export function Login({ onSuccess }) {
             <h1 className="brand-title">LMS</h1>
             <p className="brand-tagline">Library Management System</p>
             <div className="brand-divider"></div>
-            <p className="brand-description" style={{ fontWeight: '600', color: 'var(--button-color)' }}>
-              From Effort to Automation.
+            <p className="brand-description">
+              Empowering knowledge through efficient library management
             </p>
-            <div className="credit-info" style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              <p style={{ margin: '0.25rem 0' }}>Provided by: <strong>Rinixo Systems</strong></p>
-              <p style={{ margin: '0.25rem 0' }}>Product Engineer: <strong>Dinux Weerasinghe</strong></p>
-            </div>
           </div>
 
           {/* Library Stats/Features */}
@@ -405,7 +401,7 @@ export function Login({ onSuccess }) {
           <div className="footer-info" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
             <span>LMS – Library Management System • Version 1.0.0</span>
             <div style={{ marginTop: '0.25rem' }}>
-              <span>Contact: rinixoinfo@gmail.com</span>
+              <span>"From Effort to Automation." • Contact: rinixoinfo@gmail.com</span>
             </div>
           </div>
         </div>
@@ -419,9 +415,10 @@ export function Login({ onSuccess }) {
           align-items: center;
           justify-content: center;
           background: linear-gradient(135deg, var(--color-bg) 0%, var(--color-surface) 100%);
-          padding: 2rem 1rem;
+          padding: 1rem;
           position: relative;
           overflow: hidden;
+          max-height: 100vh;
         }
 
         /* Background Decorations */
@@ -502,20 +499,21 @@ export function Login({ onSuccess }) {
 
         .login-container {
           width: 100%;
-          max-width: 1000px;
+          max-width: 900px;
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 3rem;
+          grid-template-columns: 1.1fr 0.9fr;
+          gap: 2rem;
           align-items: center;
           z-index: 1;
+          margin-top: -2rem;
         }
 
         /* Enhanced Logo Section */
         .logo-section {
           display: flex;
           flex-direction: column;
-          gap: 2rem;
-          padding: 2rem;
+          gap: 1.5rem;
+          padding: 1rem;
         }
 
         .logo-backdrop {
@@ -543,7 +541,7 @@ export function Login({ onSuccess }) {
         }
 
         .brand-title {
-          font-size: 3rem;
+          font-size: 2.5rem;
           font-weight: 800;
           color: var(--color-text);
           margin: 0;
@@ -766,7 +764,7 @@ export function Login({ onSuccess }) {
           background: var(--color-surface);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-lg);
-          padding: 2.5rem;
+          padding: 2rem;
           box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
           animation: slideIn 0.4s ease-out;
         }
@@ -976,7 +974,9 @@ export function Login({ onSuccess }) {
         }
         
         .login-footer {
-          margin-top: 3rem;
+          position: absolute;
+          bottom: 1.5rem;
+          width: 100%;
           z-index: 1;
         }
 
