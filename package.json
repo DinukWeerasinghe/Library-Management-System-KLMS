@@ -68,7 +68,10 @@
       "include": "electron/build/installer.nsh",
       "deleteAppDataOnUninstall": false,
       "guid": "KLMS-KUMARADASA-OFFLINE",
-      "perMachine": false
+      "perMachine": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     }
   }
 }
