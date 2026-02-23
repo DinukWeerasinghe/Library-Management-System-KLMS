@@ -4,12 +4,15 @@ import { Dashboard } from './pages/Dashboard';
 import { DialogProvider } from './components/DialogProvider';
 import { ExitPinGate } from './components/ExitPinGate';
 import { LockScreen } from './components/LockScreen';
+import { ActivationDialog } from './components/ActivationDialog';
 import './styles/index.css';
 
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [locked, setLocked] = useState(false);
+  const [licenseStatus, setLicenseStatus] = useState({ isValid: true });
+  const [showActivationManual, setShowActivationManual] = useState(false);
 
   useEffect(() => {
     if (window.klms?.activity) {
@@ -26,6 +29,10 @@ export default function App() {
     if (typeof window !== 'undefined' && window.klms?.auth?.getSession) {
       window.klms.auth.getSession().then((s) => {
         setSession(s);
+        // Check license after session (or before, but let's do both)
+        return window.klms.license.getStatus();
+      }).then(status => {
+        setLicenseStatus(status);
         setLoading(false);
       }).catch(() => setLoading(false));
 
@@ -46,8 +53,12 @@ export default function App() {
       const handleLockRequest = () => setLocked(true);
       window.klms.onShowLockScreen(handleLockRequest);
 
+      // Handle Show Activation Event
+      const handleShowActivation = () => setShowActivationManual(true);
+      document.addEventListener('klms:show-activation', handleShowActivation);
+
       return () => {
-        // Cleanup logic if needed
+        document.removeEventListener('klms:show-activation', handleShowActivation);
       };
     } else {
       setLoading(false);
@@ -115,6 +126,16 @@ export default function App() {
       <DialogProvider />
       <ExitPinGate />
       {locked && <LockScreen onUnlock={() => setLocked(false)} />}
+      {(!licenseStatus.isValid || showActivationManual) && (
+        <ActivationDialog
+          canClose={licenseStatus.isValid && showActivationManual}
+          onClose={() => setShowActivationManual(false)}
+          onActivated={() => {
+            setShowActivationManual(false);
+            window.klms.license.getStatus().then(setLicenseStatus);
+          }}
+        />
+      )}
     </>
   );
 }

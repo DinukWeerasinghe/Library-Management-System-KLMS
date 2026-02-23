@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KLMS Activation Key Generator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #0f172a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            font-size: 1.25rem;
+            margin-top: 0;
+            color: #818cf8;
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #94a3b8;
+            margin-bottom: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 0.75rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 0.5rem;
+            color: white;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1.5rem;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #4338ca;
+        }
+
+        .result-box {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #064e3b;
+            border: 1px solid #059669;
+            border-radius: 0.5rem;
+            display: none;
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: #34d399;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-key {
+            font-family: monospace;
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        .footer {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>KLMS Key Generator</h1>
+
+        <label for="machineId">Paste Machine ID</label>
+        <input type="text" id="machineId" placeholder="E.g. A1B2C3D4E5F6" autocomplete="off">
+
+        <button onclick="generate()">Generate Key</button>
+
+        <div id="resultBox" class="result-box">
+            <div class="result-label">ACTIVATION KEY (Click to copy)</div>
+            <div id="resultKey" class="result-key" onclick="copyKey()"></div>
+        </div>
+
+        <div class="footer">Keep this generator private. Only share keys with authorized users.</div>
+    </div>
+
+    <script>
+        const SALT = 'KLMS_SECURE_SALT_2026';
+        const SUFFIX = 'LICENSE_KEY';
+
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        async function generate() {
+            const mid = document.getElementById('machineId').value.trim().toUpperCase();
+            if (!mid) return alert('Please enter a Machine ID');
+
+            // Logic must match license-service.js:
+            // hash(machineId + SALT + SUFFIX).substring(0, 12)
+            const fullHash = await sha256(mid + SALT + SUFFIX);
+            const key = fullHash.substring(0, 12).toUpperCase();
+
+            document.getElementById('resultKey').innerText = key;
+            document.getElementById('resultBox').style.display = 'block';
+        }
+
+        function copyKey() {
+            const key = document.getElementById('resultKey').innerText;
+            navigator.clipboard.writeText(key);
+            alert('Key copied: ' + key);
+        }
+    </script>
+</body>
+
+</html>

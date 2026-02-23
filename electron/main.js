@@ -65,8 +65,6 @@ function createWindow() {
     mainWindow.loadFile(indexPath).catch(e => {
       logger.info(`FAILED to load file: ${e.message}`);
     });
-    // Auto-open devtools to debug white screen issue
-    mainWindow.webContents.openDevTools();
   }
 
   mainWindow.once('ready-to-show', () => {

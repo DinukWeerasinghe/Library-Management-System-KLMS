@@ -356,6 +356,20 @@ function registerIpcHandlers() {
     if (!session || session.role !== 'ADMIN') throw new Error('Unauthorized');
     return rollbackService.rollbackImport(batchId);
   });
+
+  // --- License Management ---
+  ipcMain.handle('license:getStatus', () => {
+    const licenseService = require('./services/license-service');
+    return {
+      ...licenseService.getStatus(),
+      machineId: licenseService.getMachineId()
+    };
+  });
+
+  ipcMain.handle('license:activate', async (event, key) => {
+    const licenseService = require('./services/license-service');
+    return await licenseService.activate(key);
+  });
 }
 
 module.exports = { registerIpcHandlers };

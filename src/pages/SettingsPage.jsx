@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DialogService } from '../services/DialogService';
-import { Upload, Download, Database, History, RotateCcw, Info } from 'lucide-react';
+import { Upload, Download, Database, History, RotateCcw, Info, ShieldAlert } from 'lucide-react';
 
 const FEATURE_KEYS = [
   { key: 'enable_fine', label: 'Enable fine calculation' },
@@ -44,6 +44,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
   const [importHistory, setImportHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [version, setVersion] = useState({ version_name: '...', version_code: '' });
+  const [licenseInfo, setLicenseInfo] = useState({ machineId: '...', type: '...', daysRemaining: 0 });
 
   const isAdmin = session?.role === 'ADMIN';
 
@@ -67,6 +68,8 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       })
       .catch(() => DialogService.showError('Failed to load settings'))
       .finally(() => setLoading(false));
+
+    window.klms.license.getStatus().then(setLicenseInfo);
 
     if (isAdmin) {
       loadImportHistory();
@@ -536,7 +539,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           About
         </h3>
         <p className="muted">Application version and build information.</p>
-        
+
         <div className="version-info" style={{ marginTop: '1rem' }}>
           <div className="version-item">
             <span className="version-label">Version:</span>
@@ -549,6 +552,44 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
             </div>
           )}
         </div>
+      </section>
+
+      {/* Software Licensing Information */}
+      <section className="settings-section">
+        <h3 className="flex items-center gap-2">
+          <ShieldAlert size={20} className="text-amber-500" />
+          Software Licensing
+        </h3>
+        <p className="muted">Your application's licensing and activation status.</p>
+
+        <div className="version-info">
+          <div className="version-item">
+            <span className="version-label">Machine ID:</span>
+            <span className="version-value">{licenseInfo.machineId}</span>
+          </div>
+          <div className="version-item">
+            <span className="version-label">License Status:</span>
+            <span className={`version-value ${licenseInfo.type === 'ACTIVE' ? 'text-green-500' : 'text-amber-500'}`}>
+              {licenseInfo.type}
+            </span>
+          </div>
+          {licenseInfo.type === 'TRIAL' && (
+            <div className="version-item">
+              <span className="version-label">Trial Days Remaining:</span>
+              <span className="version-value">{licenseInfo.daysRemaining} Days</span>
+            </div>
+          )}
+        </div>
+
+        {licenseInfo.type !== 'ACTIVE' && (
+          <button
+            type="button"
+            className="btn-primary mt-4 w-full"
+            onClick={() => document.dispatchEvent(new CustomEvent('klms:show-activation'))}
+          >
+            Enter Activation Key
+          </button>
+        )}
       </section>
 
       <style>{`

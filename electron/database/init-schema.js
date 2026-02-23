@@ -46,7 +46,11 @@ function runInit(wrappedDb) {
     ['exit_pin', '1234', 'Application Exit PIN'],
     ['lock_enabled', '0', 'Enable Session Auto Lock'],
     ['lock_timeout_minutes', '5', 'Inactivity timeout in minutes'],
-    ['lock_pin', '1111', 'Session Lock PIN']
+    ['lock_pin', '1111', 'Session Lock PIN'],
+    ['license_status', 'TRIAL', 'Current license status'],
+    ['license_key', '', 'Activated license key'],
+    ['installation_date', new Date().toISOString(), 'Date of first installation'],
+    ['machine_id', '', 'Locked machine hardware ID']
   ];
   defaultConfig.forEach(([k, v, d]) => {
     wrappedDb.prepare('INSERT OR IGNORE INTO Configuration (key, value, description) VALUES (?, ?, ?)').run(k, v, d);

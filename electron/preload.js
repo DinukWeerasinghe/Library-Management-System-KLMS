@@ -106,5 +106,9 @@ contextBridge.exposeInMainWorld('klms', {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     getBuildInfo: () => ipcRenderer.invoke('app:getBuildInfo'),
     checkForUpdate: () => ipcRenderer.invoke('app:checkForUpdate')
+  },
+  license: {
+    getStatus: () => ipcRenderer.invoke('license:getStatus'),
+    activate: (key) => ipcRenderer.invoke('license:activate', key),
   }
 });

@@ -100,7 +100,15 @@ async function validateTrial() {
 
 async function validateLicense() {
     logger.debug('Boot: Validating license...');
-    // Placeholder for future license logic
+    const licenseService = require('./license-service');
+    const status = licenseService.getStatus();
+
+    if (!status.isValid) {
+        throw new Error(`Your software license has expired or is invalid. Machine ID: ${licenseService.getMachineId()}`);
+    }
+
+    // Store status globally for UI access
+    global.licenseStatus = status;
     return true;
 }
 
