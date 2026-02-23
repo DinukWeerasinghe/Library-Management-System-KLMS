@@ -9,6 +9,7 @@ const { app } = require('electron');
 let db = null;
 let SQL = null;
 let initPromise = null;
+let isBatchMode = false;
 
 function getDbPath() {
   if (typeof app !== 'undefined' && app && !app.isPackaged) {
@@ -24,10 +25,14 @@ function getDbPath() {
  * Expose better-sqlite3-like API over sql.js for minimal code changes.
  */
 function wrapDb(nativeDb, onWrite) {
+  const handleWrite = () => {
+    if (onWrite && !isBatchMode) onWrite();
+  };
+
   return {
     exec(sql) {
       nativeDb.run(sql);
-      if (onWrite && /^\s*(INSERT|UPDATE|DELETE|CREATE|DROP)/i.test(sql.trim())) onWrite();
+      if (/^\s*(INSERT|UPDATE|DELETE|CREATE|DROP)/i.test(sql.trim())) handleWrite();
     },
     prepare(sql) {
       return {
@@ -40,11 +45,11 @@ function wrapDb(nativeDb, onWrite) {
             const id = result.length && result[0].values.length ? result[0].values[0][0] : 0;
             const changes = result.length && result[0].values.length ? result[0].values[0][1] : 0;
 
-            if (onWrite) onWrite();
+            handleWrite();
 
             return { lastInsertRowid: id, changes };
           } catch (e) {
-            if (onWrite && /^\s*(INSERT|UPDATE|DELETE)/i.test(sql.trim())) onWrite();
+            if (/^\s*(INSERT|UPDATE|DELETE)/i.test(sql.trim())) handleWrite();
             throw e;
           }
         },
@@ -82,7 +87,7 @@ function wrapDb(nativeDb, onWrite) {
       const id = result.length && result[0].values.length ? result[0].values[0][0] : 0;
       const changes = result.length && result[0].values.length ? result[0].values[0][1] : 0;
 
-      if (onWrite && /^\s*(INSERT|UPDATE|DELETE)/i.test(sql.trim())) onWrite();
+      handleWrite();
 
       return { lastInsertRowid: id, changes };
     },
@@ -126,6 +131,20 @@ function getDatabase() {
   return wrapDb(db, saveDatabase);
 }
 
+/**
+ * Enable/Disable batch mode. While enabled, database is NOT saved to disk on every write.
+ */
+function setBatchMode(enabled) {
+  isBatchMode = !!enabled;
+}
+
+/**
+ * Manually persist the database to disk.
+ */
+function persist() {
+  saveDatabase();
+}
+
 function closeDatabase() {
   if (db) {
     saveDatabase();
@@ -142,4 +161,6 @@ module.exports = {
   getDbPath,
   ensureDatabaseExists,
   saveDatabase,
+  setBatchMode,
+  persist,
 };

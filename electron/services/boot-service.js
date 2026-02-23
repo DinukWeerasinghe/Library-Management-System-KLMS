@@ -58,19 +58,32 @@ async function loadDatabase() {
     const { runImportHistoryMigration } = require('../database/migrate-import-history');
     const { runVersionMigration } = require('../database/migrate-version');
 
-    runMigration();
-    runRbacMigration();
-    runBrandingMigration();
-    runMemberCodeMigration();
-    runMemberBarcodeMigration();
-    runBookHybridIdMigration();
-    runMemberValidityMigration();
-    await runBookBarcodeFillMigration();
-    runExitPinMigration();
-    runSessionLockMigration();
-    runActivityLogMigration();
-    runImportHistoryMigration();
-    await runVersionMigration();
+    const { setBatchMode, persist } = require('../database/connection');
+
+    // Enable batch mode for migrations
+    setBatchMode(true);
+
+    try {
+        runMigration();
+        runRbacMigration();
+        runBrandingMigration();
+        runMemberCodeMigration();
+        runMemberBarcodeMigration();
+        runBookHybridIdMigration();
+        runMemberValidityMigration();
+        await runBookBarcodeFillMigration();
+        runExitPinMigration();
+        runSessionLockMigration();
+        runActivityLogMigration();
+        runImportHistoryMigration();
+        await runVersionMigration();
+
+        // Final persistence after all migrations
+        persist();
+    } finally {
+        // Always disable batch mode
+        setBatchMode(false);
+    }
 }
 
 async function loadConfig() {

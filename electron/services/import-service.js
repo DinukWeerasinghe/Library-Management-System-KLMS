@@ -154,65 +154,78 @@ async function executeImport(rows) {
     const categoryMap = new Map(allCategories.map(c => [c.name.toLowerCase(), c.id]));
 
     // 1. Create ImportBatch
+    const { getDatabase, setBatchMode, persist } = require('../database/connection');
     const db = getDatabase();
     const batchResult = db.prepare('INSERT INTO ImportBatch (type, row_count) VALUES (?, ?)').run('BOOK', 0);
     const batchId = Number(batchResult.lastInsertRowid);
 
     logger.info(`Processing ${rows.length} rows for BOOK import batch #${batchId}`);
 
-    for (const row of rows) {
-        if (row.status === 'INVALID') {
-            logger.debug(`Skipping row ${row.id}: status is INVALID`);
-            continue;
-        }
+    // Enable batch mode for bulk inserts
+    setBatchMode(true);
 
-        try {
-            const data = row.data;
+    try {
+        for (const row of rows) {
+            if (row.status === 'INVALID') {
+                logger.debug(`Skipping row ${row.id}: status is INVALID`);
+                continue;
+            }
 
-            if (row.status === 'MERGE') {
-                logger.debug(`Merging book: ${data.title}, bookId: ${row.existingBook.id}`);
-                // MERGE: Update existing book
-                const bookId = row.existingBook.id;
-                const newCopies = data.total_copies;
+            try {
+                const data = row.data;
 
-                // Update total and available copies
-                db.prepare('UPDATE Book SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE id = ?')
-                    .run(newCopies, newCopies, bookId);
+                if (row.status === 'MERGE') {
+                    logger.debug(`Merging book: ${data.title}, bookId: ${row.existingBook.id}`);
+                    // MERGE: Update existing book
+                    const bookId = row.existingBook.id;
+                    const newCopies = data.total_copies;
 
-                stats.success++;
-            } else if (row.status === 'NEW') {
-                logger.info(`Creating book: ${data.title}, batch_id: ${batchId}`);
-                // NEW: Create book
-                // Category Logic
-                let categoryId = null;
-                if (data.category) {
-                    const catName = data.category.trim();
-                    const lowerCat = catName.toLowerCase();
-                    if (categoryMap.has(lowerCat)) {
-                        categoryId = categoryMap.get(lowerCat);
-                    } else {
-                        const newCat = categoryService.create({ name: catName });
-                        if (newCat && newCat.id) {
-                            categoryId = newCat.id;
-                            categoryMap.set(lowerCat, categoryId);
+                    // Update total and available copies
+                    db.prepare('UPDATE Book SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE id = ?')
+                        .run(newCopies, newCopies, bookId);
+
+                    stats.success++;
+                } else if (row.status === 'NEW') {
+                    logger.info(`Creating book: ${data.title}, batch_id: ${batchId}`);
+                    // NEW: Create book
+                    // Category Logic
+                    let categoryId = null;
+                    if (data.category) {
+                        const catName = data.category.trim();
+                        const lowerCat = catName.toLowerCase();
+                        if (categoryMap.has(lowerCat)) {
+                            categoryId = categoryMap.get(lowerCat);
+                        } else {
+                            const newCat = categoryService.create({ name: catName });
+                            if (newCat && newCat.id) {
+                                categoryId = newCat.id;
+                                categoryMap.set(lowerCat, categoryId);
+                            }
                         }
                     }
-                }
 
-                bookService.create({
-                    ...data,
-                    category_id: categoryId,
-                    batch_id: batchId
-                });
-                stats.success++;
-            } else {
-                logger.debug(`Unknown row status ${row.status} for row ${row.id}`);
+                    bookService.create({
+                        ...data,
+                        category_id: categoryId,
+                        batch_id: batchId
+                    });
+                    stats.success++;
+                } else {
+                    logger.debug(`Unknown row status ${row.status} for row ${row.id}`);
+                }
+            } catch (err) {
+                stats.failed++;
+                stats.errors.push({ row: row.id, message: err.message });
+                logger.error(`Import execution failed for row ${row.id}: ${err.message}`);
             }
-        } catch (err) {
-            stats.failed++;
-            stats.errors.push({ row: row.id, message: err.message });
-            logger.error(`Import execution failed for row ${row.id}: ${err.message}`);
         }
+
+        // Final persistence after all rows
+        persist();
+
+    } finally {
+        // Always disable batch mode
+        setBatchMode(false);
     }
 
     // Update batch with final successful count

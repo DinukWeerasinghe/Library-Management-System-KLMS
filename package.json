@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
   "name": "klms",
   "version": "1.0.0",
   "description": "Library Management System - Offline Desktop Application",
