@@ -145,7 +145,7 @@ function update(id, data) {
 
   db.prepare(`
     UPDATE Book SET 
-      title=?, author=?, isbn=?, category_id=?, external_code=?, internal_code=COALESCE(?, internal_code), total_copies=?, available_copies=?, updated_at=datetime('now')
+      title=?, author=?, isbn=?, category_id=?, external_code=?, internal_code=COALESCE(?, internal_code), total_copies=?, available_copies=?, updated_at=datetime('now', 'localtime')
     WHERE id=?
   `).run(
     title ?? existing.title,
@@ -227,7 +227,7 @@ function decreaseAvailableCopies(bookId) {
   const available = parseInt(book.available_copies, 10) || 0;
   if (available <= 0) throw new Error('Book has no available copies');
   db.prepare(
-    'UPDATE Book SET available_copies = available_copies - 1, updated_at = datetime(\'now\') WHERE id = ?'
+    'UPDATE Book SET available_copies = available_copies - 1, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?'
   ).run(bookId);
   return getById(bookId);
 }
@@ -240,7 +240,7 @@ function increaseAvailableCopies(bookId) {
   const total = parseInt(book.total_copies, 10) || 1;
   const newAvailable = Math.min(available + 1, total);
   db.prepare(
-    'UPDATE Book SET available_copies = ?, updated_at = datetime(\'now\') WHERE id = ?'
+    'UPDATE Book SET available_copies = ?, updated_at = datetime(\'now\', \'localtime\') WHERE id = ?'
   ).run(newAvailable, bookId);
   return getById(bookId);
 }

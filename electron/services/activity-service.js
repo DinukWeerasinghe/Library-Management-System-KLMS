@@ -42,7 +42,7 @@ function writeToLogFile(userId, actionType, description) {
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
         const logFile = path.join(LOG_DIR, `${dateStr}.log`);
 
-        const timestamp = date.toISOString();
+        const timestamp = new Date().toLocaleString('sv-SE').replace(' ', 'T'); // YYYY-MM-DDTHH:mm:ss local
         const logEntry = `[${timestamp}] [USER:${userId}] [${actionType}] ${description}\n`;
 
         fs.appendFile(logFile, logEntry, (err) => {
@@ -63,7 +63,7 @@ function logSessionStart(userId) {
         const db = getDatabase();
         const stmt = db.prepare(`
       INSERT INTO SessionLog (user_id, login_time, status)
-      VALUES (?, datetime('now'), 'ACTIVE')
+      VALUES (?, datetime('now', 'localtime'), 'ACTIVE')
     `);
         const result = stmt.run(userId);
         writeToLogFile(userId, ACTION_TYPES.LOGIN, 'Session Started');
@@ -84,7 +84,7 @@ function logSessionEnd(userId) {
         const db = getDatabase();
         db.prepare(`
       UPDATE SessionLog 
-      SET logout_time = datetime('now'), status = 'CLOSED' 
+      SET logout_time = datetime('now', 'localtime'), status = 'CLOSED' 
       WHERE user_id = ? AND status IN ('ACTIVE', 'LOCKED')
     `).run(userId);
         writeToLogFile(userId, ACTION_TYPES.LOGOUT, 'Session Ended');

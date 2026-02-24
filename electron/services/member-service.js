@@ -162,7 +162,7 @@ function update(id, data) {
       phone = ?,
       address = ?,
       barcode_path = COALESCE(?, barcode_path),
-      updated_at = datetime('now')
+      updated_at = datetime('now', 'localtime')
     WHERE id = ?
   `).run(
     member_type ?? existing.member_type,

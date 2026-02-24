@@ -48,7 +48,7 @@ function issueBook(memberId, bookId) {
   let dueDate = null;
   if (isFeatureEnabled('enable_due_date')) {
     const maxDays = parseInt(getConfig('max_borrow_days'), 10) || 14;
-    const result = db.prepare("SELECT date('now') as today").get();
+    const result = db.prepare("SELECT date('now', 'localtime') as today").get();
     const issueDate = result.today;
     const dueResult = db.prepare("SELECT date(?, '+' || ? || ' days') as d").get(issueDate, maxDays);
     dueDate = dueResult.d;
@@ -57,7 +57,7 @@ function issueBook(memberId, bookId) {
   // 5. Insert Issue (use date('now') in SQL so format is consistent)
   db.prepare(`
     INSERT INTO Issue (member_id, book_id, issue_date, due_date, return_date, status, fine_amount)
-    VALUES (?, ?, date('now'), ?, NULL, 'ISSUED', 0)
+    VALUES (?, ?, date('now', 'localtime'), ?, NULL, 'ISSUED', 0)
   `).run(memberId, bookId, dueDate);
 
   const created = db.prepare('SELECT id FROM Issue ORDER BY id DESC LIMIT 1').get();
@@ -105,7 +105,7 @@ function returnBook(issueId) {
   if (!issue) throw new Error('Issue not found');
   if (issue.return_date) throw new Error('Book already returned');
 
-  const returnDateRow = db.prepare("SELECT date('now') as d").get();
+  const returnDateRow = db.prepare("SELECT date('now', 'localtime') as d").get();
   const returnDate = returnDateRow.d;
 
   // 2 & 3. Set return_date and status
@@ -253,7 +253,7 @@ function getOverdue() {
     FROM Issue i
     JOIN Book b ON i.book_id = b.id
     JOIN Member m ON i.member_id = m.id
-    WHERE i.return_date IS NULL AND i.due_date IS NOT NULL AND i.due_date < date('now')
+    WHERE i.return_date IS NULL AND i.due_date IS NOT NULL AND i.due_date < date('now', 'localtime')
     ORDER BY i.due_date ASC
   `).all();
 }
