@@ -14,9 +14,22 @@ class LicenseService {
 
     /**
      * Generates a unique machine ID based on hardware info.
-     * This is a simplified version; in production, you might use better packages like 'node-machine-id'.
+     * Uses Windows Registry MachineGuid for stability across networks.
      */
     getMachineId() {
+        try {
+            const { execSync } = require('child_process');
+            const output = execSync('reg query HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid').toString();
+            const match = /MachineGuid\s+REG_SZ\s+([a-fA-F0-9-]+)/.exec(output);
+
+            if (match && match[1]) {
+                const stableId = match[1].toLowerCase();
+                return crypto.createHash('sha256').update(stableId + this.salt).digest('hex').substring(0, 16).toUpperCase();
+            }
+        } catch (e) {
+            logger.error('Failed to get MachineGuid from registry, falling back to network interfaces:', e.message);
+        }
+
         const interfaces = os.networkInterfaces();
         let macStr = '';
         for (const name in interfaces) {

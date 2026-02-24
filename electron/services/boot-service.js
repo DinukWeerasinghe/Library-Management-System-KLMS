@@ -104,7 +104,8 @@ async function validateLicense() {
     const status = licenseService.getStatus();
 
     if (!status.isValid) {
-        throw new Error(`Your software license has expired or is invalid. Machine ID: ${licenseService.getMachineId()}`);
+        logger.warn(`License validation failed: ${status.type}. Machine ID: ${licenseService.getMachineId()}`);
+        // We do NOT throw here anymore. We allow the app to boot so the user can reactivate.
     }
 
     // Store status globally for UI access

@@ -117,12 +117,23 @@ app.whenReady().then(async () => {
     createWindow();
 
   } catch (err) {
-    logger.info(`BOOT FAILED: ${err.message}`);
-    if (splashWindow && !splashWindow.isDestroyed()) {
-      splashWindow.close();
+    logger.error(`BOOT FAILED: ${err.message}`);
+
+    // If it's a license error, we still want to show the main window 
+    // The React app handles the "invalid license" state by showing the ActivationDialog
+    if (err.message.includes('license') || err.message.includes('Machine ID')) {
+      logger.warn('Boot continued despite license error for recovery.');
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+      }
+      createWindow();
+    } else {
+      if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+      }
+      dialog.showErrorBox('Critical Boot Failure', `The application failed to start: ${err.message}`);
+      app.quit();
     }
-    dialog.showErrorBox('Critical Boot Failure', `The application failed to start: ${err.message}`);
-    app.quit();
   }
 
   app.on('activate', () => {
