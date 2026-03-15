@@ -1,14 +1,15 @@
 -- KLMS SQLite Schema (reference; actual init is in init-db.js)
--- Tables: Admin, Configuration, FeatureToggle, Category, Member, Book, Issue, Fine, Payment
+-- Tables: User, Configuration, FeatureToggle, Category, Member, Book, Issue, Fine, Payment
 
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS Admin (
+CREATE TABLE IF NOT EXISTS User (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  created_at TEXT DEFAULT (datetime('now')),
-  updated_at TEXT DEFAULT (datetime('now'))
+  role TEXT NOT NULL DEFAULT 'ADMIN' CHECK (role IN ('ADMIN', 'LIBRARIAN', 'TEACHER')),
+  created_at TEXT DEFAULT (datetime('now', 'localtime')),
+  updated_at TEXT DEFAULT (datetime('now', 'localtime'))
 );
 
 CREATE TABLE IF NOT EXISTS Configuration (
