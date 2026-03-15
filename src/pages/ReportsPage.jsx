@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 
-const REPORT_TYPES = [
-  { id: 'issued', label: 'Issued Books Report' },
-  { id: 'returned', label: 'Returned Books Report' },
-  { id: 'overdue', label: 'Overdue Books Report' },
-  { id: 'member', label: 'Member-wise Borrowing Report' },
-];
+const REPORT_TYPES_KEYS = ['issued', 'returned', 'overdue', 'member'];
 
 function buildCSV(rows) {
   if (!rows || rows.length === 0) return '';
@@ -34,6 +30,8 @@ function downloadCSV(rows, filename = 'report.csv') {
 }
 
 export function ReportsPage({ features = {} }) {
+  const { t } = useTranslation();
+  const REPORT_TYPES = REPORT_TYPES_KEYS.map(id => ({ id, label: t(`reports.${id}Report`) }));
   const [reportType, setReportType] = useState('issued');
   const [memberId, setMemberId] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -90,7 +88,7 @@ export function ReportsPage({ features = {} }) {
   if (!reportsEnabled) {
     return (
       <div className="reports-page reports-disabled">
-        <p>Reports are disabled. Enable "Enable reports" in Settings to access this page.</p>
+        <p>{t('reports.disabledMsg')}</p>
       </div>
     );
   }
@@ -123,55 +121,43 @@ export function ReportsPage({ features = {} }) {
 
         <div className="reports-toolbar">
           <div className="toolbar-group">
-            <label>Report Type
+            <label>{t('reports.reportType')}
               <select value={reportType} onChange={(e) => setReportType(e.target.value)} disabled={loading}>
-                {REPORT_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+                {REPORT_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
               </select>
             </label>
             {reportType === 'member' && (
-              <label>Member
+              <label>{t('reports.member')}
                 <select value={memberId} onChange={(e) => setMemberId(e.target.value)} disabled={loading}>
-                  <option value="">All Members</option>
+                  <option value="">{t('reports.allMembers')}</option>
                   {members.map((m) => <option key={m.id} value={m.id}>{m.name} ({m.member_type})</option>)}
                 </select>
               </label>
             )}
           </div>
           <div className="toolbar-group">
-            <label>From Date
+            <label>{t('reports.fromDate')}
               <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} disabled={loading} />
             </label>
-            <label>To Date
+            <label>{t('reports.toDate')}
               <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} disabled={loading} />
             </label>
           </div>
         </div>
 
         <div className="stats-grid">
-          <div className="stat-card">
-            <span className="stat-label">Total Issued</span>
-            <span className="stat-value">{summary.totalIssued}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Total Returned</span>
-            <span className="stat-value">{summary.totalReturned}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Overdue Now</span>
-            <span className="stat-value warning">{summary.totalOverdue}</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-label">Fine Collected</span>
-            <span className="stat-value success">LKR {summary.totalFineCollected.toFixed(2)}</span>
-          </div>
+          <div className="stat-card"><span className="stat-label">{t('reports.totalIssued')}</span><span className="stat-value">{summary.totalIssued}</span></div>
+          <div className="stat-card"><span className="stat-label">{t('reports.totalReturned')}</span><span className="stat-value">{summary.totalReturned}</span></div>
+          <div className="stat-card"><span className="stat-label">{t('reports.overdueNow')}</span><span className="stat-value warning">{summary.totalOverdue}</span></div>
+          <div className="stat-card"><span className="stat-label">{t('reports.fineCollected')}</span><span className="stat-value success">LKR {summary.totalFineCollected.toFixed(2)}</span></div>
         </div>
 
         <div className="insights-grid">
           <div className="insight-section card">
-            <h3>Most Borrowed Books</h3>
-            {mostBorrowed.length === 0 ? <p className="muted">No data available</p> : (
+            <h3>{t('reports.mostBorrowed')}</h3>
+            {mostBorrowed.length === 0 ? <p className="muted">{t('reports.noData')}</p> : (
               <table className="mini-table">
-                <thead><tr><th>Book Title</th><th>Borrows</th></tr></thead>
+                <thead><tr><th>{t('reports.bookTitle')}</th><th>{t('reports.borrows')}</th></tr></thead>
                 <tbody>
                   {mostBorrowed.map((b, i) => (
                     <tr key={i}><td>{b.title}</td><td>{b.borrow_count}</td></tr>
@@ -181,10 +167,10 @@ export function ReportsPage({ features = {} }) {
             )}
           </div>
           <div className="insight-section card">
-            <h3>Top Active Members</h3>
-            {topMembers.length === 0 ? <p className="muted">No data available</p> : (
+            <h3>{t('reports.topMembers')}</h3>
+            {topMembers.length === 0 ? <p className="muted">{t('reports.noData')}</p> : (
               <table className="mini-table">
-                <thead><tr><th>Member</th><th>Issues</th></tr></thead>
+                <thead><tr><th>{t('reports.memberCol')}</th><th>{t('reports.issues')}</th></tr></thead>
                 <tbody>
                   {topMembers.map((m, i) => (
                     <tr key={i}><td>{m.name}</td><td>{m.issue_count}</td></tr>
@@ -197,13 +183,13 @@ export function ReportsPage({ features = {} }) {
 
         <div className="reports-table-wrap card">
           <div className="table-header">
-            <h3>Detailed Records</h3>
-            <span className="count-badge">{rows.length} records</span>
+            <h3>{t('reports.detailedRecords')}</h3>
+            <span className="count-badge">{rows.length} {t('reports.records')}</span>
           </div>
           {loading ? (
-            <div className="loading-state">Loading report data...</div>
+            <div className="loading-state">{t('reports.loadingReport')}</div>
           ) : rows.length === 0 ? (
-            <p className="empty">No records found for the selected filters.</p>
+            <p className="empty">{t('reports.noRecords')}</p>
           ) : (
             <table className="reports-table">
               <thead>

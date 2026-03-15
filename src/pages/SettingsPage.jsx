@@ -1,33 +1,34 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 import { Upload, Download, Database, History, RotateCcw, Info, ShieldAlert } from 'lucide-react';
 
 const FEATURE_KEYS = [
-  { key: 'enable_fine', label: 'Enable fine calculation' },
-  { key: 'enable_due_date', label: 'Enable due date tracking' },
-  { key: 'enable_renewal', label: 'Allow renewal' },
-  { key: 'enable_reports', label: 'Enable reports' },
-  { key: 'enable_categories', label: 'Enable book categories' },
-  { key: 'enable_borrow_limit', label: 'Enforce borrow limit' },
+  { key: 'enable_fine' },
+  { key: 'enable_due_date' },
+  { key: 'enable_renewal' },
+  { key: 'enable_reports' },
+  { key: 'enable_categories' },
+  { key: 'enable_borrow_limit' },
 ];
 
 const CONFIG_KEYS = [
-  { key: 'max_borrow_days', label: 'Max borrow days' },
-  { key: 'max_books_per_member', label: 'Max books per member' },
-  { key: 'fine_per_day', label: 'Fine per day' },
-  { key: 'grace_period', label: 'Grace period (days)' },
-  { key: 'registration_fee', label: 'Registration Fee' },
+  { key: 'max_borrow_days' },
+  { key: 'max_books_per_member' },
+  { key: 'fine_per_day' },
+  { key: 'grace_period' },
+  { key: 'registration_fee' },
 ];
 
 const BRANDING_KEYS = [
-  { key: 'primary_color', label: 'Primary Color', type: 'color' },
-  { key: 'secondary_color', label: 'Secondary Color', type: 'color' },
-  { key: 'sidebar_color', label: 'Sidebar Color', type: 'color' },
-  { key: 'button_color', label: 'Button Color', type: 'color' },
-  { key: 'button_hover_color', label: 'Button Hover Color', type: 'color' },
-  { key: 'header_text_color', label: 'Header Text Color', type: 'color' },
-  { key: 'background_color', label: 'Background Color', type: 'color' },
-  { key: 'school_name', label: 'School Name', type: 'text' },
+  { key: 'primary_color', type: 'color' },
+  { key: 'secondary_color', type: 'color' },
+  { key: 'sidebar_color', type: 'color' },
+  { key: 'button_color', type: 'color' },
+  { key: 'button_hover_color', type: 'color' },
+  { key: 'header_text_color', type: 'color' },
+  { key: 'background_color', type: 'color' },
+  { key: 'school_name', type: 'text' },
 ];
 
 const EXIT_PIN_KEYS = [
@@ -36,6 +37,7 @@ const EXIT_PIN_KEYS = [
 ];
 
 export function SettingsPage({ features: propFeatures, onFeaturesChange, session }) {
+  const { t } = useTranslation();
   const [config, setConfig] = useState({});
   const [features, setFeatures] = useState(propFeatures || {});
   const [theme, setTheme] = useState({});
@@ -227,20 +229,20 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
   };
 
 
-  if (loading) return <div className="settings-page"><p>Loading...</p></div>;
+  if (loading) return <div className="settings-page"><p>{t('settings.loading')}</p></div>;
 
   return (
     <div className="settings-page">
-      <h2>System Settings</h2>
+      <h2>{t('settings.title')}</h2>
 
       {/* Feature Toggle Switches */}
       <section className="settings-section">
-        <h3>Feature toggles</h3>
-        <p className="muted">Toggle to enable or disable features. Changes apply immediately.</p>
+        <h3>{t('settings.featureToggles')}</h3>
+        <p className="muted">{t('settings.featureToggleDesc')}</p>
         <div className="toggle-list">
-          {FEATURE_KEYS.map(({ key, label }) => (
+          {FEATURE_KEYS.map(({ key }) => (
             <div key={key} className="toggle-row">
-              <span className="toggle-label">{label}</span>
+              <span className="toggle-label">{t(`settings.features.${key}`)}</span>
               <button
                 type="button"
                 role="switch"
@@ -257,12 +259,12 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
 
       {/* Configuration */}
       <section className="settings-section">
-        <h3>Configuration</h3>
-        <p className="muted">Numeric settings for borrowing and fines.</p>
+        <h3>{t('settings.configuration')}</h3>
+        <p className="muted">{t('settings.configurationDesc')}</p>
         <div className="config-grid">
-          {CONFIG_KEYS.map(({ key, label }) => (
+          {CONFIG_KEYS.map(({ key }) => (
             <label key={key}>
-              {label}
+              {t(`settings.config.${key}`)}
               <input
                 type="number"
                 min="0"
@@ -273,22 +275,22 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           ))}
         </div>
         <button type="button" className="btn-primary" onClick={handleSaveConfig}>
-          Save configuration
+          {t('settings.saveConfig')}
         </button>
       </section>
 
       {/* Branding (Admin Only) */}
       {isAdmin && (
         <section className="settings-section">
-          <h3>System Branding</h3>
-          <p className="muted">Customize the look and feel of your library system.</p>
+          <h3>{t('settings.systemBranding')}</h3>
+          <p className="muted">{t('settings.systemBrandingDesc')}</p>
 
           <div className="branding-grid">
-            {BRANDING_KEYS.map(({ key, label, type }) => {
+            {BRANDING_KEYS.map(({ key, type }) => {
               const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
               return (
                 <div key={key} className="branding-item">
-                  <label>{label}</label>
+                  <label>{t(`settings.branding.${key}`)}</label>
                   <input
                     type={type}
                     value={theme[camelKey] || ''}
@@ -299,7 +301,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
             })}
 
             <div className="branding-item">
-              <label>School Logo</label>
+              <label>{t('settings.schoolLogo')}</label>
               <div className="logo-preview-container">
                 {theme.schoolLogo && (
                   <img src={theme.schoolLogo} alt="Logo Preview" className="logo-preview-img" />
@@ -310,7 +312,7 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           </div>
 
           <button type="button" className="btn-primary" onClick={handleSaveBranding}>
-            Save branding
+            {t('settings.saveBranding')}
           </button>
         </section>
       )}
@@ -318,11 +320,11 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
       {/* Application Security Settings (Admin Only) */}
       {isAdmin && (
         <section className="settings-section">
-          <h3>Application Security</h3>
-          <p className="muted">Require a PIN to close the application.</p>
+          <h3>{t('settings.appSecurity')}</h3>
+          <p className="muted">{t('settings.appSecurityDesc')}</p>
           <div className="toggle-list">
             <div className="toggle-row">
-              <span className="toggle-label">Enable Exit PIN</span>
+              <span className="toggle-label">{t('settings.enableExitPin')}</span>
               <button
                 type="button"
                 role="switch"
@@ -337,18 +339,18 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
           {config.exit_pin_enabled === '1' && (
             <div className="config-grid" style={{ marginTop: '1rem' }}>
               <label>
-                Set Exit PIN (Numeric)
+                {t('settings.setExitPin')}
                 <input
                   type="number"
                   pattern="[0-9]*"
                   inputMode="numeric"
-                  placeholder="Enter Numeric PIN"
+                  placeholder={t('settings.exitPinPlaceholder')}
                   value={config.exit_pin || ''}
                   onChange={(e) => handleConfigChange('exit_pin', e.target.value)}
                 />
               </label>
               <button type="button" className="btn-primary" style={{ alignSelf: 'flex-end', height: '40px' }} onClick={() => window.klms.config.set('exit_pin', config.exit_pin).then(() => DialogService.showSuccess('Exit PIN saved.'))}>
-                Save PIN
+                {t('settings.savePin')}
               </button>
             </div>
           )}
@@ -357,11 +359,11 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
 
       {/* Session Security Settings */}
       <section className="settings-section">
-        <h3>Session Security</h3>
-        <p className="muted">Configure automatic and manual session locking.</p>
+        <h3>{t('settings.sessionSecurity')}</h3>
+        <p className="muted">{t('settings.sessionSecurityDesc')}</p>
         <div className="toggle-list">
           <div className="toggle-row">
-            <span className="toggle-label">Enable Auto Lock</span>
+            <span className="toggle-label">{t('settings.enableAutoLock')}</span>
             <button
               type="button"
               role="switch"
@@ -376,22 +378,15 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
 
         <div className="config-grid" style={{ marginTop: '1rem' }}>
           <label>
-            Timeout (minutes)
-            <input
-              type="number"
-              min="1"
-              max="60"
+            {t('settings.timeoutMinutes')}
+            <input type="number" min="1" max="60"
               value={config.lock_timeout_minutes || '5'}
               onChange={(e) => handleConfigChange('lock_timeout_minutes', e.target.value)}
             />
           </label>
           <label>
-            Lock PIN
-            <input
-              type="number"
-              pattern="[0-9]*"
-              inputMode="numeric"
-              placeholder="1111"
+            {t('settings.lockPin')}
+            <input type="number" pattern="[0-9]*" inputMode="numeric" placeholder="1111"
               value={config.lock_pin || ''}
               onChange={(e) => handleConfigChange('lock_pin', e.target.value)}
             />
@@ -403,19 +398,19 @@ export function SettingsPage({ features: propFeatures, onFeaturesChange, session
             window.klms.config.set('lock_pin', config.lock_pin)
           ]).then(() => DialogService.showSuccess('Session security settings saved.'));
         }}>
-          Save Session Settings
+          {t('settings.saveSessionSettings')}
         </button>
       </section>
 
       {/* Change password */}
       <section className="settings-section">
-        <h3>Change password</h3>
+        <h3>{t('settings.changePassword')}</h3>
         <div className="config-grid">
-          <label>Current password <input type="password" value={passwordForm.current} onChange={(e) => setPasswordForm((p) => ({ ...p, current: e.target.value }))} autoComplete="current-password" /></label>
-          <label>New password <input type="password" value={passwordForm.new} onChange={(e) => setPasswordForm((p) => ({ ...p, new: e.target.value }))} autoComplete="new-password" /></label>
-          <label>Confirm new password <input type="password" value={passwordForm.confirm} onChange={(e) => setPasswordForm((p) => ({ ...p, confirm: e.target.value }))} autoComplete="new-password" /></label>
+          <label>{t('settings.currentPassword')} <input type="password" value={passwordForm.current} onChange={(e) => setPasswordForm((p) => ({ ...p, current: e.target.value }))} autoComplete="current-password" /></label>
+          <label>{t('settings.newPassword')} <input type="password" value={passwordForm.new} onChange={(e) => setPasswordForm((p) => ({ ...p, new: e.target.value }))} autoComplete="new-password" /></label>
+          <label>{t('settings.confirmNewPassword')} <input type="password" value={passwordForm.confirm} onChange={(e) => setPasswordForm((p) => ({ ...p, confirm: e.target.value }))} autoComplete="new-password" /></label>
         </div>
-        <button type="button" className="btn-primary" onClick={handleChangePassword}>Change password</button>
+        <button type="button" className="btn-primary" onClick={handleChangePassword}>{t('settings.changePassword')}</button>
       </section>
 
       {/* Data & Storage */}

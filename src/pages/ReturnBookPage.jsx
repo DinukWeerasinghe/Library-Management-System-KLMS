@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
 
 export function ReturnBookPage({ features = {} }) {
+  const { t } = useTranslation();
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [returningId, setReturningId] = useState(null);
@@ -115,20 +117,20 @@ export function ReturnBookPage({ features = {} }) {
   const showRenew = Boolean(features.enable_renew);
   const memberIssues = currentMember ? issues.filter(i => i.member_id === currentMember.id) : [];
 
-  if (loading && issues.length === 0) return <div className="page-loader">Connecting to Terminal...</div>;
+  if (loading && issues.length === 0) return <div className="page-loader">{t('return.connecting')}</div>;
 
   return (
     <div className="return-terminal">
       <header className="terminal-header">
-        <div className="header-badge">RETURNS CENTER</div>
-        <h1>Book Returns</h1>
-        <div className="status-clock">CURRENT TIME: {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</div>
+        <div className="header-badge">{t('return.returnsCenter')}</div>
+        <h1>{t('return.bookReturns')}</h1>
+        <div className="status-clock">{t('return.currentTime')}: {new Date().getHours()}:{new Date().getMinutes().toString().padStart(2, '0')}</div>
       </header>
 
       <div className="terminal-grid">
         {/* IDENTIFICATION COLUMN */}
         <section className={`column member-column ${currentMember ? 'identified' : ''}`}>
-          <div className="column-label">MEMBER DETAILS</div>
+          <div className="column-label">{t('return.memberDetails')}</div>
 
           <div className="identity-status">
             {currentMember ? (
@@ -137,18 +139,18 @@ export function ReturnBookPage({ features = {} }) {
                 <div className="card-info">
                   <div className="name-row">
                     <span className="name">{currentMember.name}</span>
-                    <button className="btn-reset" onClick={() => setCurrentMember(null)}>CHANGE</button>
+                    <button className="btn-reset" onClick={() => setCurrentMember(null)}>{t('common.change')}</button>
                   </div>
                   <div className="code">{currentMember.member_code}</div>
                   <div className="stats">
-                    Currently Borrowed: <strong>{memberIssues.length} Books</strong>
+                    {t('return.currentlyBorrowed')}: <strong>{memberIssues.length} {t('return.books')}</strong>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="waiting-state">
                 <div className="pulse-dot"></div>
-                <span>Waiting for Member scan...</span>
+                <span>{t('return.waitingForMember')}</span>
               </div>
             )}
           </div>
@@ -156,14 +158,14 @@ export function ReturnBookPage({ features = {} }) {
 
         {/* SCANNING COLUMN */}
         <section className={`column processing-column ${lastReturn ? 'success' : ''}`}>
-          <div className="column-label">RETURN PROCESSING</div>
+          <div className="column-label">{t('return.returnProcessing')}</div>
 
           <div className="scan-hub">
             <div className="scan-field">
               <input
                 ref={scanInputRef}
                 type="text"
-                placeholder={!currentMember ? "Please scan Member ID" : "Scan Book to Return"}
+                placeholder={!currentMember ? t('return.scanMemberId') : t('return.scanBookToReturn')}
                 value={scanCode}
                 onChange={(e) => handleScanChange(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && processScan(scanCode)}
@@ -178,19 +180,19 @@ export function ReturnBookPage({ features = {} }) {
               <div className="return-receipt">
                 <div className="receipt-header">
                   <span className="icon">✓</span>
-                  <strong>RETURNED</strong>
+                  <strong>{t('return.returned')}</strong>
                 </div>
                 <div className="receipt-body">
                   <div className="book-title">{lastReturn.book_title}</div>
-                  <div className="member-ref">Member: {lastReturn.member_name}</div>
+                  <div className="member-ref">{t('return.member')}: {lastReturn.member_name}</div>
                   {lastReturn.fine_amount > 0 && (
-                    <div className="fine-badge">Total Fine: LKR {lastReturn.fine_amount.toFixed(2)}</div>
+                    <div className="fine-badge">{t('return.totalFine')} {lastReturn.fine_amount.toFixed(2)}</div>
                   )}
                 </div>
-                <button className="btn-clear-receipt" onClick={() => setLastReturn(null)}>DONE</button>
+                <button className="btn-clear-receipt" onClick={() => setLastReturn(null)}>{t('common.done')}</button>
               </div>
             ) : (
-              <div className="receipt-placeholder">Scan a book to process its return</div>
+              <div className="receipt-placeholder">{t('return.scanToProcess')}</div>
             )}
           </div>
         </section>
@@ -198,8 +200,8 @@ export function ReturnBookPage({ features = {} }) {
 
       <div className="issues-log-card">
         <div className="log-header">
-          <h3>{currentMember ? `Active Issues for ${currentMember.name.split(' ')[0]}` : 'Recently Issued Books'}</h3>
-          <button className="btn-refresh" onClick={loadIssued}>REFRESH LIST</button>
+          <h3>{currentMember ? `${t('return.activeIssuesFor')} ${currentMember.name.split(' ')[0]}` : t('return.recentlyIssuedBooks')}</h3>
+          <button className="btn-refresh" onClick={loadIssued}>{t('return.refreshList')}</button>
         </div>
 
         <div className="table-viewport">
@@ -226,11 +228,11 @@ export function ReturnBookPage({ features = {} }) {
                   </td>
                   <td className="actions">
                     <button className="btn-action-return" onClick={() => handleManualReturn(i.id)} disabled={returningId === i.id}>
-                      {returningId === i.id ? '...' : 'RETURN'}
+                      {returningId === i.id ? '...' : t('return.return')}
                     </button>
                     {showRenew && (
                       <button className="btn-action-renew" onClick={() => handleRenew(i.id)} disabled={renewingId === i.id}>
-                        RENEW
+                        {t('return.renew')}
                       </button>
                     )}
                   </td>
@@ -238,7 +240,7 @@ export function ReturnBookPage({ features = {} }) {
               ))}
               {(currentMember ? memberIssues : issues).length === 0 && (
                 <tr>
-                  <td colSpan="5" className="empty-msg">NO ACTIVE LENDINGS FOUND</td>
+                  <td colSpan="5" className="empty-msg">{t('return.noActiveLendings')}</td>
                 </tr>
               )}
             </tbody>

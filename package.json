@@ -27,8 +27,10 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "bwip-js": "^4.8.0",
+    "i18next": "^25.8.18",
     "lucide-react": "^0.564.0",
     "pdfkit": "^0.17.2",
+    "react-i18next": "^16.5.8",
     "sql.js": "^1.11.0"
   },
   "devDependencies": {

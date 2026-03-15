@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
 
 export function IssueBookPage({ features = {}, config = {} }) {
+  const { t } = useTranslation();
   const [members, setMembers] = useState([]);
   const [books, setBooks] = useState([]);
   const [selectedMemberId, setSelectedMemberId] = useState('');
@@ -138,27 +140,27 @@ export function IssueBookPage({ features = {}, config = {} }) {
   const availableBooks = books.filter(b => b.available_copies > 0);
   const maxBorrowDays = parseInt(config.max_borrow_days, 10) || 14;
 
-  if (loading) return <div className="page-loader">Initializing Terminal...</div>;
+  if (loading) return <div className="page-loader">{t('issue.initializing')}</div>;
 
   return (
     <div className="issue-terminal">
       <header className="terminal-header">
-        <div className="header-badge">LENDING MANAGEMENT</div>
-        <h1>Book Checkout</h1>
+        <div className="header-badge">{t('issue.lendingManagement')}</div>
+        <h1>{t('issue.bookCheckout')}</h1>
         <div className="status-clock">{new Date().toLocaleDateString()}</div>
       </header>
 
       <div className="terminal-grid">
         {/* MEMBER COLUMN */}
         <section className={`column member-column ${scannedMember ? 'identified' : ''}`}>
-          <div className="column-label">STEP 1: IDENTIFY MEMBER</div>
+          <div className="column-label">{t('issue.step1')}</div>
 
           <div className="input-group">
             <div className="scan-field">
               <input
                 ref={memberInputRef}
                 type="text"
-                placeholder="Scan Member ID Card"
+                placeholder={t('issue.scanMemberId')}
                 value={scanMemberCode}
                 onChange={(e) => handleScanMember(e.target.value)}
                 autoFocus
@@ -167,7 +169,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
 
             <div className="manual-select">
               <select value={selectedMemberId} onChange={(e) => handleManualMemberChange(e.target.value)}>
-                <option value="">Or Select Name manually...</option>
+                <option value="">{t('issue.selectMemberManually')}</option>
                 {members.map(m => (
                   <option key={m.id} value={m.id}>{m.name} ({m.member_code})</option>
                 ))}
@@ -188,29 +190,29 @@ export function IssueBookPage({ features = {}, config = {} }) {
                   </div>
                   <div className="code">{scannedMember.member_code}</div>
                   <div className="meta">
-                    <span>Active Borrowings: {scannedMember.active_issues || 0}</span>
+                    <span>{t('issue.activeBorrowings')}: {scannedMember.active_issues || 0}</span>
                     <span className={scannedMember.is_expired ? 'expired' : 'valid'}>
-                      {scannedMember.is_expired ? 'Membership Expired' : 'Membership Valid'}
+                      {scannedMember.is_expired ? t('issue.membershipExpired') : t('issue.membershipValid')}
                     </span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="card-placeholder">Waiting for Member scan...</div>
+              <div className="card-placeholder">{t('issue.waitingForMember')}</div>
             )}
           </div>
         </section>
 
         {/* BOOK COLUMN */}
         <section className={`column book-column ${scannedBook ? 'identified' : ''}`}>
-          <div className="column-label">STEP 2: IDENTIFY BOOK</div>
+          <div className="column-label">{t('issue.step2')}</div>
 
           <div className="input-group">
             <div className="scan-field">
               <input
                 ref={bookInputRef}
                 type="text"
-                placeholder="Scan Book Barcode or ISBN"
+                placeholder={t('issue.scanBookBarcode')}
                 value={scanBookCode}
                 onChange={(e) => handleScanBook(e.target.value)}
               />
@@ -218,7 +220,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
 
             <div className="manual-select">
               <select value={selectedBookId} onChange={(e) => handleManualBookChange(e.target.value)}>
-                <option value="">Or Select Title manually...</option>
+                <option value="">{t('issue.selectTitleManually')}</option>
                 {availableBooks.map(b => (
                   <option key={b.id} value={b.id}>{b.title}</option>
                 ))}
@@ -236,15 +238,15 @@ export function IssueBookPage({ features = {}, config = {} }) {
                   <div className="name-row">
                     <span className="name">{scannedBook.title}</span>
                   </div>
-                  <div className="author">By {scannedBook.author || 'Unknown Author'}</div>
+                  <div className="author">{t('issue.by')} {scannedBook.author || t('issue.unknownAuthor')}</div>
                   <div className="meta">
                     <span className="badge">{scannedBook.category || 'General'}</span>
-                    <span className="copies">{scannedBook.available_copies} Copies Available</span>
+                    <span className="copies">{scannedBook.available_copies} {t('issue.copiesAvailable')}</span>
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="card-placeholder">Waiting for Book scan...</div>
+              <div className="card-placeholder">{t('issue.waitingForBook')}</div>
             )}
           </div>
         </section>

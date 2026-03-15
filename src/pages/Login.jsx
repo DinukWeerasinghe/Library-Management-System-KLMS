@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Logo } from '../components/Logo';
 import { DialogService } from '../services/DialogService';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 export function Login({ onSuccess }) {
+  const { t } = useTranslation();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +55,7 @@ export function Login({ onSuccess }) {
         setPublicData(overdue);
       }
     } catch (err) {
-      DialogService.showError('Public view failed: ' + err.message);
+      DialogService.showError('Public view failed: ' + err.message); // keep untranslated (technical)
     } finally {
       setPublicLoading(false);
     }
@@ -137,7 +140,7 @@ export function Login({ onSuccess }) {
                 <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
                 <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
               </svg>
-              <span>Available Books</span>
+              <span>{t('login.availableBooks')}</span>
             </button>
             <button className="feature-badge" onClick={() => handlePublicView('members')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -146,14 +149,14 @@ export function Login({ onSuccess }) {
                 <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                 <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
-              <span>Our Members</span>
+              <span>{t('login.ourMembers')}</span>
             </button>
             <button className="feature-badge" onClick={() => handlePublicView('due')}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
-              <span>Overdue List</span>
+              <span>{t('login.overdueList')}</span>
             </button>
           </div>
         </div>
@@ -162,14 +165,14 @@ export function Login({ onSuccess }) {
           <div className="public-modal-overlay" onClick={() => setPublicView(null)}>
             <div className="public-modal" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>{publicView === 'books' ? 'Available Books' : publicView === 'members' ? 'Member List' : 'Overdue Reminders'}</h3>
+                <h3>{publicView === 'books' ? t('login.availableBooks') : publicView === 'members' ? t('login.memberList') : t('login.overdueMembers')}</h3>
                 <button className="close-btn" onClick={() => setPublicView(null)}>×</button>
               </div>
               <div className="modal-content">
                 <div className="public-search-wrapper">
                   <input
                     type="text"
-                    placeholder={`Search ${publicView === 'books' ? 'by title or author' : publicView === 'members' ? 'by name or ID' : 'by book or member'}...`}
+                    placeholder={`${t('common.search')} ${publicView === 'books' ? t('login.searchByTitleOrAuthor') : publicView === 'members' ? t('login.searchByNameOrId') : t('login.searchByBookOrMember')}...`}
                     value={publicSearch}
                     onChange={(e) => setPublicSearch(e.target.value)}
                     className="public-search-input"
@@ -179,10 +182,10 @@ export function Login({ onSuccess }) {
                 {publicLoading ? (
                   <div className="modal-loader">
                     <span className="spinner"></span>
-                    Loading collection...
+                    {t('login.loadingCollection')}
                   </div>
                 ) : filteredPublicData.length === 0 ? (
-                  <div className="empty-state">No records found matching your search.</div>
+                  <div className="empty-state">{t('login.noRecordsFound')}</div>
                 ) : (
                   <div className="public-list">
                     {publicView === 'books' && filteredPublicData.map(book => (
@@ -192,7 +195,7 @@ export function Login({ onSuccess }) {
                           <div className="item-sub">{book.author} • {book.category_name || 'General'}</div>
                         </div>
                         <div className={`item-badge ${book.available_copies > 0 ? 'success' : 'danger'}`}>
-                          {book.available_copies > 0 ? `${book.available_copies} Available` : 'Out of Stock'}
+                          {book.available_copies > 0 ? `${book.available_copies} ${t('login.available')}` : t('login.outOfStock')}
                         </div>
                       </div>
                     ))}
@@ -211,7 +214,7 @@ export function Login({ onSuccess }) {
                           <div className="item-sub">Member: {i.member_name}</div>
                         </div>
                         <div className="item-badge danger">
-                          Overdue since: {new Date(i.due_date).toLocaleDateString()}
+                          {t('login.overduesince')}: {new Date(i.due_date).toLocaleDateString()}
                         </div>
                       </div>
                     ))}
@@ -226,39 +229,39 @@ export function Login({ onSuccess }) {
           <div className="public-modal-overlay" onClick={() => setFooterModal(null)}>
             <div className="public-modal" onClick={e => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>{footerModal === 'help' ? 'Help Center' : footerModal === 'privacy' ? 'Privacy Policy' : 'Terms of Service'}</h3>
+                <h3>{footerModal === 'help' ? t('login.helpCenter') : footerModal === 'privacy' ? t('login.privacyPolicy') : t('login.termsOfService')}</h3>
                 <button className="close-btn" onClick={() => setFooterModal(null)}>×</button>
               </div>
               <div className="modal-content" style={{ color: 'var(--color-text)', lineHeight: '1.6', padding: '1.5rem' }}>
                 {footerModal === 'help' && (
                   <div className="help-content">
-                    <h4 style={{ color: 'var(--button-color)', marginTop: 0 }}>Direct Support</h4>
-                    <p>For any technical issues or feature requests, please contact our product engineer:</p>
+                    <h4 style={{ color: 'var(--button-color)', marginTop: 0 }}>{t('login.directSupport')}</h4>
+                    <p>{t('login.supportDesc')}</p>
                     <p><strong>Dinux Weerasinghe</strong><br />Product Engineer @ Rinixo Systems</p>
                     <p><strong>Email:</strong> <a href="mailto:rinixoinfo@gmail.com" style={{ color: 'var(--button-color)' }}>rinixoinfo@gmail.com</a></p>
                     <hr style={{ border: '0', borderTop: '1px solid var(--color-border)', margin: '1.5rem 0' }} />
-                    <h4 style={{ color: 'var(--button-color)' }}>Quick Tips</h4>
+                    <h4 style={{ color: 'var(--button-color)' }}>{t('login.quickTips')}</h4>
                     <ul>
-                      <li>Forgot your password? Contact your library administrator.</li>
-                      <li>Having trouble activating? Use the Machine ID from Settings.</li>
-                      <li>Need a backup? Use the Backup tools in Settings.</li>
+                      <li>{t('login.tip1')}</li>
+                      <li>{t('login.tip2')}</li>
+                      <li>{t('login.tip3')}</li>
                     </ul>
                   </div>
                 )}
                 {footerModal === 'privacy' && (
                   <div className="privacy-content">
-                    <h4 style={{ color: 'var(--button-color)', marginTop: 0 }}>Data Security</h4>
-                    <p>KLMS is designed with privacy in mind. All your library data is stored <strong>locally</strong> on this machine in a secure SQLite database.</p>
-                    <p>Rinixo Systems does not collect your library data. We only process Machine IDs for software activation purposes.</p>
-                    <p>Backup files generated by the system are the responsibility of the library administrator.</p>
+                    <h4 style={{ color: 'var(--button-color)', marginTop: 0 }}>{t('login.dataSecurityTitle')}</h4>
+                    <p>{t('login.privacyDesc1')}</p>
+                    <p>{t('login.privacyDesc2')}</p>
+                    <p>{t('login.privacyDesc3')}</p>
                   </div>
                 )}
                 {footerModal === 'terms' && (
                   <div className="terms-content">
-                    <h4 style={{ color: 'var(--button-color)', marginTop: 0 }}>License Agreement</h4>
-                    <p>This software is provided "as is" by Rinixo Systems. Use of this software is subject to the terms of your activation license.</p>
-                    <p>KLMS – Library Management System is a proprietary product of Rinixo Systems.</p>
-                    <p>The tagline "From Effort to Automation" is a hallmark of our commitment to your library's efficiency.</p>
+                    <h4 style={{ color: 'var(--button-color)', marginTop: 0 }}>{t('login.licenseTitle')}</h4>
+                    <p>{t('login.termsDesc1')}</p>
+                    <p>{t('login.termsDesc2')}</p>
+                    <p>{t('login.termsDesc3')}</p>
                   </div>
                 )}
               </div>
@@ -269,8 +272,8 @@ export function Login({ onSuccess }) {
         {/* Login Card */}
         <div className="login-card">
           <div className="login-header">
-            <h2 className="login-title">Welcome Back</h2>
-            <p className="login-subtitle">Sign in to access your library dashboard</p>
+            <h2 className="login-title">{t('login.welcome')}</h2>
+            <p className="login-subtitle">{t('login.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} noValidate>
@@ -280,7 +283,7 @@ export function Login({ onSuccess }) {
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                Username
+                {t('login.username')}
               </label>
               <input
                 id="username"
@@ -288,7 +291,7 @@ export function Login({ onSuccess }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoComplete="username"
-                placeholder="Enter your username"
+                placeholder={t('login.usernamePlaceholder')}
                 required
                 autoFocus
                 disabled={loading}
@@ -302,7 +305,7 @@ export function Login({ onSuccess }) {
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                   <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                Password
+                {t('login.password')}
               </label>
               <div className="password-input-wrapper">
                 <input
@@ -312,7 +315,7 @@ export function Login({ onSuccess }) {
                   onChange={(e) => setPassword(e.target.value)}
                   onKeyUp={handleKeyUp}
                   autoComplete="current-password"
-                  placeholder="Enter your password"
+                  placeholder={t('login.passwordPlaceholder')}
                   required
                   disabled={loading}
                   aria-describedby={undefined}
@@ -322,7 +325,7 @@ export function Login({ onSuccess }) {
                   className="password-toggle"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   disabled={loading}
                 >
                   {showPassword ? (
@@ -345,7 +348,7 @@ export function Login({ onSuccess }) {
                     <line x1="12" y1="9" x2="12" y2="13" />
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
-                  Caps Lock is on
+                  {t('login.capsLock')}
                 </div>
               )}
             </div>
@@ -358,7 +361,7 @@ export function Login({ onSuccess }) {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={loading}
                 />
-                <span>Remember my username</span>
+                <span>{t('login.rememberMe')}</span>
               </label>
             </div>
 
@@ -371,7 +374,7 @@ export function Login({ onSuccess }) {
               {loading ? (
                 <>
                   <span className="spinner"></span>
-                  Signing in...
+                  {t('login.signingIn')}
                 </>
               ) : (
                 <>
@@ -380,7 +383,7 @@ export function Login({ onSuccess }) {
                     <polyline points="10 17 15 12 10 7"></polyline>
                     <line x1="15" y1="12" x2="3" y2="12"></line>
                   </svg>
-                  Sign In to Dashboard
+                  {t('login.signIn')}
                 </>
               )}
             </button>
@@ -390,14 +393,17 @@ export function Login({ onSuccess }) {
 
       <div className="login-footer">
         <div className="footer-content">
-          <div className="footer-links" style={{ marginBottom: '1rem' }}>
-            <span className="footer-link" onClick={() => setFooterModal('help')}>Help Center</span>
-            <span className="footer-divider">•</span>
-            <span className="footer-link" onClick={() => setFooterModal('privacy')}>Privacy Policy</span>
-            <span className="footer-divider">•</span>
-            <span className="footer-link" onClick={() => setFooterModal('terms')}>Terms of Service</span>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <LanguageSwitcher />
           </div>
-          <p className="copyright" style={{ fontWeight: 'bold' }}>Developed by: Rinixo Systems</p>
+          <div className="footer-links" style={{ marginBottom: '1rem' }}>
+            <span className="footer-link" onClick={() => setFooterModal('help')}>{t('login.helpCenter')}</span>
+            <span className="footer-divider">•</span>
+            <span className="footer-link" onClick={() => setFooterModal('privacy')}>{t('login.privacyPolicy')}</span>
+            <span className="footer-divider">•</span>
+            <span className="footer-link" onClick={() => setFooterModal('terms')}>{t('login.termsOfService')}</span>
+          </div>
+          <p className="copyright" style={{ fontWeight: 'bold' }}>{t('login.developedBy')}</p>
           <div className="footer-info" style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', marginTop: '0.5rem' }}>
             <span>LMS – Library Management System • Version 1.0.0</span>
             <div style={{ marginTop: '0.25rem' }}>

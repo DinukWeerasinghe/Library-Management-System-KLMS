@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export function ActivityLogPage() {
+    const { t } = useTranslation();
     const [logs, setLogs] = useState([]);
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -93,21 +95,13 @@ export function ActivityLogPage() {
     return (
         <div className="activity-log-page p-6">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold" style={{ color: 'var(--header-text-color)' }}>Activity Log</h1>
+                <h1 className="text-2xl font-bold" style={{ color: 'var(--header-text-color)' }}>{t('activity.title')}</h1>
                 <div className="flex space-x-2">
-                    <button
-                        onClick={() => loadLogs(pagination.page)}
-                        className="px-4 py-2 rounded text-white font-medium hover:opacity-90"
-                        style={{ backgroundColor: 'var(--secondary-color)' }}
-                    >
-                        Refresh
+                    <button onClick={() => loadLogs(pagination.page)} className="px-4 py-2 rounded text-white font-medium hover:opacity-90" style={{ backgroundColor: 'var(--secondary-color)' }}>
+                        {t('activity.refresh')}
                     </button>
-                    <button
-                        onClick={handleExport}
-                        className="px-4 py-2 rounded text-white font-medium"
-                        style={{ backgroundColor: 'var(--button-color)' }}
-                    >
-                        Export to CSV
+                    <button onClick={handleExport} className="px-4 py-2 rounded text-white font-medium" style={{ backgroundColor: 'var(--button-color)' }}>
+                        {t('activity.exportCSV')}
                     </button>
                 </div>
             </div>
@@ -115,7 +109,7 @@ export function ActivityLogPage() {
             {/* Filters Form */}
             <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6 p-4 rounded-lg border border-[var(--secondary-color)]" style={{ backgroundColor: 'var(--background-color)' }}>
                 <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>From Date</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>{t('activity.fromDate')}</label>
                     <input
                         type="date"
                         className="w-full p-2 rounded border border-[var(--secondary-color)] bg-transparent"
@@ -125,7 +119,7 @@ export function ActivityLogPage() {
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>To Date</label>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>{t('activity.toDate')}</label>
                     <input
                         type="date"
                         className="w-full p-2 rounded border border-[var(--secondary-color)] bg-transparent"
@@ -135,40 +129,26 @@ export function ActivityLogPage() {
                     />
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>User</label>
-                    <select
-                        className="w-full p-2 rounded border border-[var(--secondary-color)] bg-transparent"
-                        style={{ color: 'var(--text-color)' }}
-                        value={filters.userId}
-                        onChange={(e) => handleFilterChange('userId', e.target.value)}
-                    >
-                        <option value="">All Users</option>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>{t('activity.user')}</label>
+                    <select className="w-full p-2 rounded border border-[var(--secondary-color)] bg-transparent" style={{ color: 'var(--text-color)' }} value={filters.userId} onChange={(e) => handleFilterChange('userId', e.target.value)}>
+                        <option value="">{t('activity.allUsers')}</option>
                         {users.map(u => (
                             <option key={u.id} value={u.id}>{u.username} ({u.role})</option>
                         ))}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>Action Type</label>
-                    <select
-                        className="w-full p-2 rounded border border-[var(--secondary-color)] bg-transparent"
-                        style={{ color: 'var(--text-color)' }}
-                        value={filters.actionType}
-                        onChange={(e) => handleFilterChange('actionType', e.target.value)}
-                    >
-                        <option value="">All Actions</option>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-color)' }}>{t('activity.actionType')}</label>
+                    <select className="w-full p-2 rounded border border-[var(--secondary-color)] bg-transparent" style={{ color: 'var(--text-color)' }} value={filters.actionType} onChange={(e) => handleFilterChange('actionType', e.target.value)}>
+                        <option value="">{t('activity.allActions')}</option>
                         {ACTION_TYPES.map(type => (
                             <option key={type} value={type}>{type.replace('_', ' ')}</option>
                         ))}
                     </select>
                 </div>
                 <div className="flex items-end">
-                    <button
-                        type="submit"
-                        className="w-full py-2 rounded text-white font-medium hover:opacity-90 transition-opacity"
-                        style={{ backgroundColor: 'var(--primary-color)' }}
-                    >
-                        Filter Logs
+                    <button type="submit" className="w-full py-2 rounded text-white font-medium hover:opacity-90 transition-opacity" style={{ backgroundColor: 'var(--primary-color)' }}>
+                        {t('activity.filterLogs')}
                     </button>
                 </div>
             </form>
@@ -178,26 +158,22 @@ export function ActivityLogPage() {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr style={{ backgroundColor: 'var(--primary-color)', color: 'white' }}>
-                            <th className="p-3 whitespace-nowrap">Timestamp</th>
-                            <th className="p-3 whitespace-nowrap">User</th>
-                            <th className="p-3 whitespace-nowrap">Action</th>
-                            <th className="p-3 w-full">Description</th>
+                            <th className="p-3 whitespace-nowrap">{t('activity.timestamp')}</th>
+                            <th className="p-3 whitespace-nowrap">{t('activity.user')}</th>
+                            <th className="p-3 whitespace-nowrap">{t('activity.action')}</th>
+                            <th className="p-3 w-full">{t('activity.description')}</th>
                         </tr>
                     </thead>
                     <tbody style={{ color: 'var(--text-color)' }}>
                         {loading ? (
-                            <tr>
-                                <td colSpan="4" className="p-6 text-center">Loading logs...</td>
-                            </tr>
+                            <tr><td colSpan="4" className="p-6 text-center">{t('activity.loadingLogs')}</td></tr>
                         ) : logs.length === 0 ? (
-                            <tr>
-                                <td colSpan="4" className="p-6 text-center">No activity found.</td>
-                            </tr>
+                            <tr><td colSpan="4" className="p-6 text-center">{t('activity.noActivity')}</td></tr>
                         ) : (
                             logs.map((log, index) => (
                                 <tr key={log.activity_id || index} className="border-t border-[var(--secondary-color)] hover:bg-[rgba(255,255,255,0.05)]">
                                     <td className="p-3 whitespace-nowrap text-sm">{log.timestamp ? new Date(log.timestamp).toLocaleString() : '-'}</td>
-                                    <td className="p-3 font-medium whitespace-nowrap">{log.user_name || 'Unknown/Deleted'}</td>
+                                    <td className="p-3 font-medium whitespace-nowrap">{log.user_name || t('activity.unknownUser')}</td>
                                     <td className="p-3 whitespace-nowrap">
                                         <span className="px-2 py-1 rounded text-xs font-semibold bg-[rgba(255,255,255,0.1)] border border-[var(--secondary-color)]">
                                             {log.action_type}
@@ -215,15 +191,11 @@ export function ActivityLogPage() {
             {pagination.total > 0 && (
                 <div className="flex justify-between items-center mt-4 text-sm" style={{ color: 'var(--text-color)' }}>
                     <div>
-                        Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} entries
+                {t('activity.showing')} {((pagination.page - 1) * pagination.limit) + 1} {t('activity.to')} {Math.min(pagination.page * pagination.limit, pagination.total)} {t('activity.of')} {pagination.total} {t('activity.entries')}
                     </div>
                     <div className="flex space-x-2">
-                        <button
-                            onClick={() => handlePageChange(pagination.page - 1)}
-                            disabled={pagination.page === 1}
-                            className={`px-3 py-1 rounded border border-[var(--secondary-color)] ${pagination.page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--secondary-color)] hover:text-white'}`}
-                        >
-                            Previous
+                        <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className={`px-3 py-1 rounded border border-[var(--secondary-color)] ${pagination.page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--secondary-color)] hover:text-white'}`}>
+                            {t('activity.previous')}
                         </button>
                         {[...Array(Math.min(5, totalPages))].map((_, i) => {
                             // Simple logic to show first 5 pages, proper logic adds complexity
@@ -238,12 +210,8 @@ export function ActivityLogPage() {
                                 </button>
                             );
                         })}
-                        <button
-                            onClick={() => handlePageChange(pagination.page + 1)}
-                            disabled={pagination.page === totalPages}
-                            className={`px-3 py-1 rounded border border-[var(--secondary-color)] ${pagination.page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--secondary-color)] hover:text-white'}`}
-                        >
-                            Next
+                        <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === totalPages} className={`px-3 py-1 rounded border border-[var(--secondary-color)] ${pagination.page === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--secondary-color)] hover:text-white'}`}>
+                            {t('activity.next')}
                         </button>
                     </div>
                 </div>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useScanDetection } from '../hooks/useScanDetection';
 import { DialogService } from '../services/DialogService';
 import { ImportBookDialog } from './ImportBookDialog';
 import { Download, Upload } from 'lucide-react';
 
 export function Books({ features = {} }) {
+  const { t } = useTranslation();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -161,59 +163,59 @@ export function Books({ features = {} }) {
   return (
     <div className="books-view">
       <div className="view-header">
-        <h2>Book Management</h2>
+        <h2>{t('books.title')}</h2>
         <div className="header-actions">
           <button type="button" className="btn-secondary flex items-center gap-2" onClick={() => setShowImport(true)}>
-            <Download size={16} /> Import CSV
+            <Download size={16} /> {t('books.importCSV')}
           </button>
-          <button type="button" className="btn-primary" onClick={openCreate}>Add Book</button>
+          <button type="button" className="btn-primary" onClick={openCreate}>{t('books.addBook')}</button>
         </div>
       </div>
       <div className="toolbar">
         <input
           type="text"
-          placeholder="Search by title, author, ISBN..."
+          placeholder={t('books.search')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
-        <button type="button" onClick={handleSearch}>Search</button>
+        <button type="button" onClick={handleSearch}>{t('common.search')}</button>
       </div>
       {(editing === 'new' || editing) && (
         <div className="form-card">
-          <h3>{editing === 'new' ? 'New Book' : 'Edit Book'}</h3>
+          <h3>{editing === 'new' ? t('books.newBook') : t('books.editBook')}</h3>
           <div className="form-grid">
-            <label>Title * <input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} /></label>
-            <label>Author <input value={form.author} onChange={(e) => setForm(prev => ({ ...prev, author: e.target.value }))} /></label>
-            <label>ISBN <input value={form.isbn} onChange={(e) => setForm(prev => ({ ...prev, isbn: e.target.value }))} /></label>
-            <label>Publisher Barcode <input value={form.external_code} onChange={(e) => setForm(prev => ({ ...prev, external_code: e.target.value }))} placeholder="Scan ISBN/Pub code" /></label>
+            <label>{t('books.titleField')} * <input value={form.title} onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))} /></label>
+            <label>{t('books.author')} <input value={form.author} onChange={(e) => setForm(prev => ({ ...prev, author: e.target.value }))} /></label>
+            <label>{t('books.isbn')} <input value={form.isbn} onChange={(e) => setForm(prev => ({ ...prev, isbn: e.target.value }))} /></label>
+            <label>{t('books.pubBarcode')} <input value={form.external_code} onChange={(e) => setForm(prev => ({ ...prev, external_code: e.target.value }))} placeholder={t('books.scanPubCode')} /></label>
             {showCategories && (
-              <label>Category <select value={form.category_id} onChange={(e) => setForm(prev => ({ ...prev, category_id: e.target.value }))}>
-                <option value="">None</option>
+              <label>{t('books.category')} <select value={form.category_id} onChange={(e) => setForm(prev => ({ ...prev, category_id: e.target.value }))}>
+                <option value="">{t('books.none')}</option>
                 {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select></label>
             )}
-            <label>Total copies <input type="number" min={1} value={form.total_copies} onChange={(e) => setForm(prev => ({ ...prev, total_copies: e.target.value }))} /></label>
+            <label>{t('books.totalCopies')} <input type="number" min={1} value={form.total_copies} onChange={(e) => setForm(prev => ({ ...prev, total_copies: e.target.value }))} /></label>
           </div>
           <div className="form-actions">
-            <button type="button" onClick={closeForm}>Cancel</button>
-            <button type="button" className="btn-primary" onClick={save}>Save</button>
+            <button type="button" onClick={closeForm}>{t('books.cancel')}</button>
+            <button type="button" className="btn-primary" onClick={save}>{t('books.save')}</button>
           </div>
         </div>
       )}
       <div className="table-wrap">
-        {loading ? <p>Loading...</p> : (
+        {loading ? <p>{t('books.loading')}</p> : (
           <>
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Title</th>
-                  <th>Author</th>
-                  <th>ID Codes</th>
-                  <th>KLMS Barcode</th>
-                  {showCategories && <th>Category</th>}
-                  <th>Available</th>
-                  <th>Actions</th>
+                  <th>{t('books.titleField')}</th>
+                  <th>{t('books.author')}</th>
+                  <th>{t('books.idCodes')}</th>
+                  <th>{t('books.klmsBarcode')}</th>
+                  {showCategories && <th>{t('books.category')}</th>}
+                  <th>{t('books.available')}</th>
+                  <th>{t('books.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -230,14 +232,14 @@ export function Books({ features = {} }) {
                     </td>
                     <td>
                       {b.barcode_path ? (
-                        <button type="button" className="btn-sm" onClick={() => showBarcode(b)}>View</button>
-                      ) : (b.internal_code ? <button type="button" className="btn-sm" onClick={() => regenerateBarcode(b)}>Generate</button> : '–')}
+                        <button type="button" className="btn-sm" onClick={() => showBarcode(b)}>{t('books.view')}</button>
+                      ) : (b.internal_code ? <button type="button" className="btn-sm" onClick={() => regenerateBarcode(b)}>{t('books.generate')}</button> : '–')}
                     </td>
                     {showCategories && <td>{b.category_name || '–'}</td>}
                     <td>{b.available_copies} / {b.total_copies}</td>
                     <td>
-                      <button type="button" className="btn-sm" onClick={() => openEdit(b)}>Edit</button>
-                      <button type="button" className="btn-sm danger" onClick={() => remove(b.id)}>Delete</button>
+                      <button type="button" className="btn-sm" onClick={() => openEdit(b)}>{t('books.edit')}</button>
+                      <button type="button" className="btn-sm danger" onClick={() => remove(b.id)}>{t('books.delete')}</button>
                     </td>
                   </tr>
                 ))}
@@ -246,7 +248,7 @@ export function Books({ features = {} }) {
 
             <div className="pagination">
               <div className="pagination-info">
-                Showing {Math.min(total, (page - 1) * pageSize + 1)} to {Math.min(total, page * pageSize)} of {total} books
+                {t('books.showing')} {Math.min(total, (page - 1) * pageSize + 1)} {t('books.to')} {Math.min(total, page * pageSize)} {t('books.of')} {total} {t('books.books')}
               </div>
               <div className="pagination-controls">
                 <button
@@ -254,47 +256,47 @@ export function Books({ features = {} }) {
                   onClick={() => setPage(p => p - 1)}
                   className="btn-sm"
                 >
-                  Previous
+                  {t('books.previous')}
                 </button>
-                <span className="page-num">Page {page} of {Math.ceil(total / pageSize) || 1}</span>
+                <span className="page-num">{t('books.page')} {page} {t('books.of')} {Math.ceil(total / pageSize) || 1}</span>
                 <button
                   disabled={page >= Math.ceil(total / pageSize)}
                   onClick={() => setPage(p => p + 1)}
                   className="btn-sm"
                 >
-                  Next
+                  {t('books.next')}
                 </button>
                 <select
                   value={pageSize}
                   onChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(1); }}
                   className="page-size-select"
                 >
-                  <option value={10}>10 per page</option>
-                  <option value={20}>20 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
+                  <option value={10}>10 {t('books.perPage')}</option>
+                  <option value={20}>20 {t('books.perPage')}</option>
+                  <option value={50}>50 {t('books.perPage')}</option>
+                  <option value={100}>100 {t('books.perPage')}</option>
                 </select>
               </div>
             </div>
           </>
         )}
-        {!loading && list.length === 0 && <p className="muted">No books found.</p>}
+        {!loading && list.length === 0 && <p className="muted">{t('books.noBooks')}</p>}
       </div>
 
       {viewingBarcode && (
         <div className="barcode-modal-overlay" onClick={() => setViewingBarcode(null)}>
           <div className="barcode-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>KLMS Book Label</h3>
+              <h3>{t('books.klmsBookLabel')}</h3>
               <button className="close-btn" onClick={() => setViewingBarcode(null)}>×</button>
             </div>
             <div className="modal-body">
               <div className="barcode-id">{viewingBarcode.code}</div>
               <img src={viewingBarcode.image} alt="Barcode" className="barcode-img" />
-              <p className="barcode-hint">Affix this label to the back cover for easy scanning</p>
+              <p className="barcode-hint">{t('books.bookBarcodeHint')}</p>
             </div>
             <div className="modal-actions">
-              <button onClick={() => window.print()} className="btn-primary">Print Label</button>
+              <button onClick={() => window.print()} className="btn-primary">{t('books.printLabel')}</button>
             </div>
           </div>
         </div>

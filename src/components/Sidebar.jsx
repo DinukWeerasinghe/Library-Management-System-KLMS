@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BookOpen,
   Users,
@@ -13,16 +14,18 @@ import {
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { PermissionService } from '../services/PermissionService';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 export function Sidebar({ session, activeTab, onTabChange, onLogout, features }) {
+  const { t } = useTranslation();
   const MENU_ITEMS = [
-    { id: 'issue-book', label: 'Issue Book', icon: BookOpen },
-    { id: 'return-book', label: 'Return Book', icon: ArrowRightLeft },
-    { id: 'members', label: 'Members', icon: UserCheck, permission: 'canManageMembers' },
-    { id: 'books', label: 'Books', icon: Library, permission: 'canManageBooks' },
-    { id: 'reports', label: 'Reports', icon: FileText, requireFeature: 'enable_reports', permission: 'canAccessReports' },
-    { id: 'users', label: 'Users', icon: Users, permission: 'canManageUsers' },
-    { id: 'settings', label: 'Settings', icon: Settings, permission: 'canAccessSettings' },
+    { id: 'issue-book', label: t('sidebar.issueBook'), icon: BookOpen },
+    { id: 'return-book', label: t('sidebar.returnBook'), icon: ArrowRightLeft },
+    { id: 'members', label: t('sidebar.members'), icon: UserCheck, permission: 'canManageMembers' },
+    { id: 'books', label: t('sidebar.books'), icon: Library, permission: 'canManageBooks' },
+    { id: 'reports', label: t('sidebar.reports'), icon: FileText, requireFeature: 'enable_reports', permission: 'canAccessReports' },
+    { id: 'users', label: t('sidebar.users'), icon: Users, permission: 'canManageUsers' },
+    { id: 'settings', label: t('sidebar.settings'), icon: Settings, permission: 'canAccessSettings' },
   ];
 
   const visibleItems = MENU_ITEMS.filter(item => {
@@ -65,18 +68,21 @@ export function Sidebar({ session, activeTab, onTabChange, onLogout, features })
             <span className={`role role-${session.role.toLowerCase()}`}>{session.role}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.25rem' }}>
-          <button
-            onClick={() => window.klms.lock()}
-            className="logout-btn"
-            title="Lock Session"
-            style={{ color: '#fbbf24' }}
-          >
-            <Lock size={18} />
-          </button>
-          <button onClick={onLogout} className="logout-btn" title="Logout">
-            <LogOut size={20} />
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <button
+              onClick={() => window.klms.lock()}
+              className="logout-btn"
+              title={t('sidebar.lockSession')}
+              style={{ color: '#fbbf24' }}
+            >
+              <Lock size={18} />
+            </button>
+            <button onClick={onLogout} className="logout-btn" title={t('sidebar.logout')}>
+              <LogOut size={20} />
+            </button>
+          </div>
+          <LanguageSwitcher compact />
         </div>
       </div>
 

@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useScanDetection } from '../hooks/useScanDetection';
 import { DialogService } from '../services/DialogService';
 import { ImportMemberDialog } from './ImportMemberDialog';
 import { Download, Upload } from 'lucide-react';
 
 export function Members() {
+  const { t } = useTranslation();
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -194,73 +196,72 @@ export function Members() {
   return (
     <div className="members-view">
       <div className="view-header">
-        <h2>Member Management</h2>
+        <h2>{t('members.title')}</h2>
         <div className="header-actions">
           <button type="button" className="btn-secondary flex items-center gap-2" onClick={() => setShowImport(true)}>
-            <Download size={16} /> Import CSV
+            <Download size={16} /> {t('members.importCSV')}
           </button>
-          <button type="button" className="btn-primary" onClick={openCreate}>Add Member</button>
+          <button type="button" className="btn-primary" onClick={openCreate}>{t('members.addMember')}</button>
         </div>
       </div>
       <div className="toolbar">
         <select value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}>
-          <option value="">All types</option>
-          <option value="Student">Student</option>
-          <option value="Teacher">Teacher</option>
+          <option value="">{t('members.allTypes')}</option>
+          <option value="Student">{t('members.student')}</option>
+          <option value="Teacher">{t('members.teacher')}</option>
         </select>
         <input
           type="text"
-          placeholder="Search by name, email, phone, member code..."
+          placeholder={t('members.search')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
-        <button type="button" onClick={handleSearch}>Search</button>
+        <button type="button" onClick={handleSearch}>{t('common.search')}</button>
       </div>
       {(editing === 'new' || editing) && (
         <div className="form-card">
-          <h3>{editing === 'new' ? 'New Member' : 'Edit Member'}</h3>
+          <h3>{editing === 'new' ? t('members.newMember') : t('members.editMember')}</h3>
           <div className="form-grid">
-            <label>Type <select value={form.member_type} onChange={(e) => setForm(prev => ({ ...prev, member_type: e.target.value }))}>
-              <option value="Student">Student</option>
-              <option value="Teacher">Teacher</option>
+            <label>{t('members.type')} <select value={form.member_type} onChange={(e) => setForm(prev => ({ ...prev, member_type: e.target.value }))}>
+              <option value="Student">{t('members.student')}</option>
+              <option value="Teacher">{t('members.teacher')}</option>
             </select></label>
-            <label>Name * <input value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} /></label>
-            <label>Member Code
+            <label>{t('members.name')} * <input value={form.name} onChange={(e) => setForm(prev => ({ ...prev, name: e.target.value }))} /></label>
+            <label>{t('members.memberCode')}
               <input
                 value={form.member_code}
                 onChange={(e) => setForm(prev => ({ ...prev, member_code: e.target.value }))}
-                placeholder={isGeneratingCode ? "Generating..." : "Enter code"}
+                placeholder={isGeneratingCode ? t('members.generating') : t('members.enterCode')}
                 disabled={isGeneratingCode}
                 style={{ background: isGeneratingCode ? 'var(--color-bg)' : undefined, opacity: isGeneratingCode ? 0.6 : 1 }}
               />
             </label>
-            <label>Email <input type="email" value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} /></label>
-            <label>Phone <input value={form.phone} onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))} /></label>
-            <label>Address <input value={form.address} onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))} /></label>
+            <label>{t('members.email')} <input type="email" value={form.email} onChange={(e) => setForm(prev => ({ ...prev, email: e.target.value }))} /></label>
+            <label>{t('members.phone')} <input value={form.phone} onChange={(e) => setForm(prev => ({ ...prev, phone: e.target.value }))} /></label>
+            <label>{t('members.address')} <input value={form.address} onChange={(e) => setForm(prev => ({ ...prev, address: e.target.value }))} /></label>
           </div>
           <div className="form-actions">
-            <button type="button" onClick={closeForm} disabled={isSubmitting}>Cancel</button>
+            <button type="button" onClick={closeForm} disabled={isSubmitting}>{t('members.cancel')}</button>
             <button type="button" className="btn-primary" onClick={save} disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save'}
+              {isSubmitting ? t('members.saving') : t('members.save')}
             </button>
           </div>
         </div>
       )}
       <div className="table-wrap">
-        {loading ? <p>Loading...</p> : (
+        {loading ? <p>{t('members.loading')}</p> : (
           <>
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Member Code</th>
-                  <th>Contact</th>
-                  <th>Registration Fee Paid</th>
-                  <th>Expiry Date</th>
-                  {/* <th>Status</th> */}
-                  <th>Actions</th>
+                  <th>{t('members.name')}</th>
+                  <th>{t('members.type')}</th>
+                  <th>{t('members.memberCode')}</th>
+                  <th>{t('members.contact')}</th>
+                  <th>{t('members.regFeePaid')}</th>
+                  <th>{t('members.expiryDate')}</th>
+                  <th>{t('members.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -279,9 +280,9 @@ export function Members() {
                     <td>{m.expiry_date || '–'}</td>
                     {/* <td><span className={`badge ${window.klms.members.isActive(m.id) ? 'success' : 'danger'}`}>{window.klms.members.isActive(m.id) ? 'Active' : 'Expired'}</span></td> */}
                     <td>
-                      <button type="button" className="btn-sm" onClick={() => openEdit(m)}>Edit</button>
-                      <button type="button" className="btn-sm" onClick={() => handleViewIdCard(m)}>Card</button>
-                      <button type="button" className="btn-sm danger" onClick={() => remove(m.id)}>Delete</button>
+                      <button type="button" className="btn-sm" onClick={() => openEdit(m)}>{t('members.edit')}</button>
+                      <button type="button" className="btn-sm" onClick={() => handleViewIdCard(m)}>{t('members.card')}</button>
+                      <button type="button" className="btn-sm danger" onClick={() => remove(m.id)}>{t('members.delete')}</button>
                     </td>
                   </tr>
                 ))}
@@ -290,7 +291,7 @@ export function Members() {
 
             <div className="pagination">
               <div className="pagination-info">
-                Showing {Math.min(total, (page - 1) * pageSize + 1)} to {Math.min(total, page * pageSize)} of {total} members
+                {t('members.showing')} {Math.min(total, (page - 1) * pageSize + 1)} {t('members.to')} {Math.min(total, page * pageSize)} {t('members.showingOf')} {total} {t('members.members')}
               </div>
               <div className="pagination-controls">
                 <button
@@ -298,47 +299,47 @@ export function Members() {
                   onClick={() => setPage(p => p - 1)}
                   className="btn-sm"
                 >
-                  Previous
+                  {t('members.previous')}
                 </button>
-                <span className="page-num">Page {page} of {Math.ceil(total / pageSize) || 1}</span>
+                <span className="page-num">{t('members.page')} {page} {t('members.of')} {Math.ceil(total / pageSize) || 1}</span>
                 <button
                   disabled={page >= Math.ceil(total / pageSize)}
                   onClick={() => setPage(p => p + 1)}
                   className="btn-sm"
                 >
-                  Next
+                  {t('members.next')}
                 </button>
                 <select
                   value={pageSize}
                   onChange={(e) => { setPageSize(parseInt(e.target.value)); setPage(1); }}
                   className="page-size-select"
                 >
-                  <option value={10}>10 per page</option>
-                  <option value={20}>20 per page</option>
-                  <option value={50}>50 per page</option>
-                  <option value={100}>100 per page</option>
+                  <option value={10}>10 {t('members.perPage')}</option>
+                  <option value={20}>20 {t('members.perPage')}</option>
+                  <option value={50}>50 {t('members.perPage')}</option>
+                  <option value={100}>100 {t('members.perPage')}</option>
                 </select>
               </div>
             </div>
           </>
         )}
-        {!loading && list.length === 0 && <p className="muted">No members found.</p>}
+        {!loading && list.length === 0 && <p className="muted">{t('members.noMembers')}</p>}
       </div>
 
       {viewingBarcode && (
         <div className="barcode-modal-overlay" onClick={() => setViewingBarcode(null)}>
           <div className="barcode-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Member Barcode</h3>
+              <h3>{t('members.memberBarcode')}</h3>
               <button className="close-btn" onClick={() => setViewingBarcode(null)}>×</button>
             </div>
             <div className="modal-body">
               <div className="barcode-id">{viewingBarcode.code}</div>
               <img src={viewingBarcode.image} alt="Barcode" className="barcode-img" />
-              <p className="barcode-hint">Use this for ID cards and scanning</p>
+              <p className="barcode-hint">{t('members.barcodeHint')}</p>
             </div>
             <div className="modal-actions">
-              <button onClick={() => window.print()} className="btn-primary">Print Barcode</button>
+              <button onClick={() => window.print()} className="btn-primary">{t('members.printBarcode')}</button>
             </div>
           </div>
         </div>
@@ -348,7 +349,7 @@ export function Members() {
         <div className="barcode-modal-overlay" onClick={() => setViewingIdCard(null)}>
           <div className="barcode-modal id-card-preview" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Member ID Card Preview</h3>
+              <h3>{t('members.idCardPreview')}</h3>
               <button className="close-btn" onClick={() => setViewingIdCard(null)}>×</button>
             </div>
             <div className="modal-body">
@@ -357,7 +358,7 @@ export function Members() {
                 title="ID Card PDF"
                 style={{ width: '100%', height: '350px', border: 'none', borderRadius: '4px' }}
               />
-              <p className="barcode-hint">This is a standard ID-1 (85.6mm x 54mm) card layout.</p>
+              <p className="barcode-hint">{t('members.idCardHint')}</p>
             </div>
             <div className="modal-actions">
               <button
@@ -367,7 +368,7 @@ export function Members() {
                   win.document.write(`<iframe src="${viewingIdCard.pdfData}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
                 }}
               >
-                Open Full PDF
+                {t('members.openPDF')}
               </button>
             </div>
           </div>

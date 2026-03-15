@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 
 export function UsersPage() {
+    const { t } = useTranslation();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -47,23 +49,23 @@ export function UsersPage() {
         }
     };
 
-    if (loading) return <div>Loading users...</div>;
+    if (loading) return <div>{t('users.loading')}</div>;
 
     return (
         <div className="users-page">
             <div className="page-header">
-                <h2>User Management</h2>
-                <button className="btn-primary" onClick={() => setShowModal(true)}>Add User</button>
+                <h2>{t('users.title')}</h2>
+                <button className="btn-primary" onClick={() => setShowModal(true)}>{t('users.addUser')}</button>
             </div>
 
 
             <table className="data-table">
                 <thead>
                     <tr>
-                        <th>Username</th>
-                        <th>Role</th>
-                        <th>Created At</th>
-                        <th>Actions</th>
+                        <th>{t('users.username')}</th>
+                        <th>{t('users.role')}</th>
+                        <th>{t('users.createdAt')}</th>
+                        <th>{t('common.actions')}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -83,10 +85,10 @@ export function UsersPage() {
             {showModal && (
                 <div className="modal-overlay">
                     <div className="modal">
-                        <h3>Add New User</h3>
+                        <h3>{t('users.addNewUser')}</h3>
                         <form onSubmit={handleCreate}>
                             <div className="form-group">
-                                <label>Username</label>
+                                <label>{t('users.username')}</label>
                                 <input
                                     type="text"
                                     value={formData.username}
@@ -95,7 +97,7 @@ export function UsersPage() {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Password</label>
+                                <label>{t('users.password')}</label>
                                 <input
                                     type="password"
                                     value={formData.password}
@@ -115,8 +117,8 @@ export function UsersPage() {
                                 </select>
                             </div>
                             <div className="modal-actions">
-                                <button type="button" onClick={() => setShowModal(false)}>Cancel</button>
-                                <button type="submit" className="btn-primary">Create</button>
+                                <button type="button" onClick={() => setShowModal(false)}>{t('users.cancel')}</button>
+                                <button type="submit" className="btn-primary">{t('users.create')}</button>
                             </div>
                         </form>
                     </div>
