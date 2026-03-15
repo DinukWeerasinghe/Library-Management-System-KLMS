@@ -372,7 +372,9 @@
     "next": "ඊළඟ",
     "klmsBookLabel": "KLMS පොතේ ලේබලය",
     "bookBarcodeHint": "ස්කෑනිං සඳහා පිටු කවරයේ ඇලවන්න",
-    "printLabel": "ලේබලය මුද්‍රණය"
+    "printLabel": "ලේබලය මුද්‍රණය",
+    "allAcquisitions": "සියලු අත්පත් කර ගැනීමේ වර්ග",
+    "filterYear": "වර්ෂය අනුව පෙරහන"
   },
   "lock": {
     "title": "සැසිය අගුළු දමා ඇත",

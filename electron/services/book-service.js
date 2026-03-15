@@ -25,6 +25,14 @@ function getAll(filters = {}) {
     baseSql += ' AND b.category_id = ?';
     params.push(filters.categoryId);
   }
+  if (filters.acquisitionType) {
+    baseSql += ' AND b.acquisition_type = ?';
+    params.push(filters.acquisitionType);
+  }
+  if (filters.publishedYear) {
+    baseSql += ' AND b.published_year = ?';
+    params.push(parseInt(filters.publishedYear, 10));
+  }
 
   // Total count
   const countSql = `SELECT COUNT(*) as count ${baseSql}`;
@@ -208,19 +216,32 @@ function search(query, filters = {}) {
   const pageSize = parseInt(filters.pageSize, 10) || 20;
   const offset = (page - 1) * pageSize;
 
-  const baseSql = useCategories
+  let baseSql = useCategories
     ? `FROM Book b LEFT JOIN Category c ON b.category_id = c.id
-       WHERE b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? OR b.internal_code LIKE ? OR b.external_code LIKE ?`
-    : `FROM Book WHERE title LIKE ? OR author LIKE ? OR isbn LIKE ? OR internal_code LIKE ? OR external_code LIKE ?`;
+       WHERE (b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? OR b.internal_code LIKE ? OR b.external_code LIKE ?)`
+    : `FROM Book b WHERE (b.title LIKE ? OR b.author LIKE ? OR b.isbn LIKE ? OR b.internal_code LIKE ? OR b.external_code LIKE ?)`;
 
   const params = [term, term, term, term, term];
+
+  if (filters.acquisitionType) {
+    baseSql += ' AND b.acquisition_type = ?';
+    params.push(filters.acquisitionType);
+  }
+  if (filters.publishedYear) {
+    baseSql += ' AND b.published_year = ?';
+    params.push(parseInt(filters.publishedYear, 10));
+  }
+  if (filters.categoryId) {
+    baseSql += ' AND b.category_id = ?';
+    params.push(filters.categoryId);
+  }
 
   // Total count
   const countSql = `SELECT COUNT(*) as count ${baseSql}`;
   const total = db.prepare(countSql).get(...params).count;
 
   // Items
-  const itemsSql = `SELECT ${useCategories ? 'b.*, c.name AS category_name' : '*'} ${baseSql} ORDER BY ${useCategories ? 'b.title' : 'title'} LIMIT ? OFFSET ?`;
+  const itemsSql = `SELECT ${useCategories ? 'b.*, c.name AS category_name' : 'b.*'} ${baseSql} ORDER BY b.title LIMIT ? OFFSET ?`;
   const items = db.prepare(itemsSql).all(...params, pageSize, offset);
 
   return { items, total, page, pageSize };

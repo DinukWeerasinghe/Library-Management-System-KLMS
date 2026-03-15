@@ -372,7 +372,9 @@
     "next": "Next",
     "klmsBookLabel": "KLMS Book Label",
     "bookBarcodeHint": "Affix this label to the back cover for easy scanning",
-    "printLabel": "Print Label"
+    "printLabel": "Print Label",
+    "allAcquisitions": "All Acquisition Types",
+    "filterYear": "Filter by Year"
   },
   "lock": {
     "title": "Session Locked",

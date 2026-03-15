@@ -10,6 +10,8 @@ export function Books({ features = {} }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterAcquisitionType, setFilterAcquisitionType] = useState('');
+  const [filterPublishedYear, setFilterPublishedYear] = useState('');
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '', published_year: '', price: '', acquisition_type: '' });
   const [categories, setCategories] = useState([]);
@@ -32,7 +34,9 @@ export function Books({ features = {} }) {
       ...filters,
       page,
       pageSize,
-      categoryId: filters.categoryId || (showCategories && form.category_id ? form.category_id : undefined)
+      categoryId: filters.categoryId || (showCategories && form.category_id ? form.category_id : undefined),
+      acquisitionType: filters.acquisitionType !== undefined ? filters.acquisitionType : filterAcquisitionType || undefined,
+      publishedYear: filters.publishedYear !== undefined ? filters.publishedYear : filterPublishedYear || undefined,
     };
 
     // Determine if we should call search or getAll
@@ -49,7 +53,7 @@ export function Books({ features = {} }) {
 
   useEffect(() => {
     loadBooks();
-  }, [page, pageSize]);
+  }, [page, pageSize, filterAcquisitionType, filterPublishedYear]);
 
   useScanDetection({
     onScanDetected: (code) => {
@@ -65,9 +69,18 @@ export function Books({ features = {} }) {
   });
 
   const handleSearch = () => {
-    setPage(1); // Reset to page 1 on new search
+    setPage(1);
     setLoading(true);
-    window.klms.books.search(searchQuery, { page: 1, pageSize }).then((res) => {
+    const searchParams = {
+      page: 1,
+      pageSize,
+      acquisitionType: filterAcquisitionType || undefined,
+      publishedYear: filterPublishedYear || undefined,
+    };
+    const promise = searchQuery.trim()
+      ? window.klms.books.search(searchQuery, searchParams)
+      : window.klms.books.getAll(searchParams);
+    promise.then((res) => {
       setList(res.items);
       setTotal(res.total);
       setLoading(false);
@@ -184,6 +197,19 @@ export function Books({ features = {} }) {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+        />
+        <select value={filterAcquisitionType} onChange={(e) => { setFilterAcquisitionType(e.target.value); setPage(1); }}>
+          <option value="">{t('books.allAcquisitions')}</option>
+          <option value="DONATION">{t('books.donation')}</option>
+          <option value="BOUGHT">{t('books.bought')}</option>
+        </select>
+        <input
+          type="number"
+          placeholder={t('books.filterYear')}
+          value={filterPublishedYear}
+          onChange={(e) => setFilterPublishedYear(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          style={{ width: '110px' }}
         />
         <button type="button" onClick={handleSearch}>{t('common.search')}</button>
       </div>
