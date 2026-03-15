@@ -50,6 +50,7 @@ async function loadDatabase() {
     const { runMemberCodeMigration } = require('../database/migrate-member-code');
     const { runMemberBarcodeMigration } = require('../database/migrate-member-barcode');
     const { runBookHybridIdMigration } = require('../database/migrate-book-barcode');
+    const { runBookDetailsMigration } = require('../database/migrate-book-details');
     const { runMemberValidityMigration } = require('../database/migrate-member-validity');
     const { runBookBarcodeFillMigration } = require('../database/migrate-book-barcode-fill');
     const { runExitPinMigration } = require('../database/migrate-exit-pin');
@@ -70,6 +71,7 @@ async function loadDatabase() {
         runMemberCodeMigration();
         runMemberBarcodeMigration();
         runBookHybridIdMigration();
+        runBookDetailsMigration();
         runMemberValidityMigration();
         await runBookBarcodeFillMigration();
         runExitPinMigration();

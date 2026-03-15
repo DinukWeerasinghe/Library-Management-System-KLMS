@@ -77,7 +77,7 @@ function generateBookCode() {
 function create(data) {
   const db = getDatabase();
   const useCategories = isFeatureEnabled('enable_categories');
-  const { title, author, isbn, category_id, total_copies, external_code, batch_id } = data;
+  const { title, author, isbn, category_id, total_copies, external_code, batch_id, published_year, price, acquisition_type } = data;
   const copies = Math.max(1, parseInt(total_copies, 10) || 1);
   const catId = useCategories && category_id ? category_id : null;
 
@@ -94,8 +94,8 @@ function create(data) {
   }
 
   const stmt = db.prepare(`
-    INSERT INTO Book (title, author, isbn, category_id, external_code, internal_code, total_copies, available_copies, batch_id)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO Book (title, author, isbn, category_id, external_code, internal_code, published_year, price, acquisition_type, total_copies, available_copies, batch_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const result = stmt.run(
     title || '',
@@ -104,6 +104,9 @@ function create(data) {
     catId,
     finalExternalCode,
     finalInternalCode,
+    published_year ? parseInt(published_year, 10) : null,
+    price ? parseFloat(price) : null,
+    acquisition_type || null,
     copies,
     copies,
     batch_id || null
@@ -134,7 +137,7 @@ function update(id, data) {
   const existing = getById(id);
   if (!existing) throw new Error('Book not found');
   const useCategories = isFeatureEnabled('enable_categories');
-  const { title, author, isbn, category_id, total_copies, external_code, batch_id } = data;
+  const { title, author, isbn, category_id, total_copies, external_code, batch_id, published_year, price, acquisition_type } = data;
   let available = existing.available_copies;
 
   const total = total_copies !== undefined ? Math.max(1, parseInt(total_copies, 10) || 1) : existing.total_copies;
@@ -145,7 +148,7 @@ function update(id, data) {
 
   db.prepare(`
     UPDATE Book SET 
-      title=?, author=?, isbn=?, category_id=?, external_code=?, internal_code=COALESCE(?, internal_code), total_copies=?, available_copies=?, updated_at=datetime('now', 'localtime')
+      title=?, author=?, isbn=?, category_id=?, external_code=?, internal_code=COALESCE(?, internal_code), published_year=?, price=?, acquisition_type=?, total_copies=?, available_copies=?, updated_at=datetime('now', 'localtime')
     WHERE id=?
   `).run(
     title ?? existing.title,
@@ -154,6 +157,9 @@ function update(id, data) {
     useCategories && category_id !== undefined ? category_id : existing.category_id,
     external_code !== undefined ? external_code : existing.external_code,
     data.internal_code || (existing.internal_code ? null : generateBookCode()),
+    published_year !== undefined ? (published_year ? parseInt(published_year, 10) : null) : existing.published_year,
+    price !== undefined ? (price ? parseFloat(price) : null) : existing.price,
+    acquisition_type !== undefined ? (acquisition_type || null) : existing.acquisition_type,
     total,
     available,
     id

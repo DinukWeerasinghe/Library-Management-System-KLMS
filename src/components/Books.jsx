@@ -11,7 +11,7 @@ export function Books({ features = {} }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
+  const [form, setForm] = useState({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '', published_year: '', price: '', acquisition_type: '' });
   const [categories, setCategories] = useState([]);
   const [viewingBarcode, setViewingBarcode] = useState(null);
   const [showImport, setShowImport] = useState(false);
@@ -76,7 +76,7 @@ export function Books({ features = {} }) {
 
   const openCreate = () => {
     setEditing('new');
-    setForm({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '' });
+    setForm({ title: '', author: '', isbn: '', category_id: '', total_copies: 1, external_code: '', published_year: '', price: '', acquisition_type: '' });
   };
 
   const openEdit = (b) => {
@@ -88,6 +88,9 @@ export function Books({ features = {} }) {
       category_id: b.category_id || '',
       total_copies: b.total_copies ?? 1,
       external_code: b.external_code || '',
+      published_year: b.published_year || '',
+      price: b.price || '',
+      acquisition_type: b.acquisition_type || '',
     });
   };
 
@@ -105,6 +108,9 @@ export function Books({ features = {} }) {
       author: form.author.trim() || null,
       isbn: form.isbn.trim() || null,
       external_code: form.external_code.trim() || null,
+      published_year: form.published_year || null,
+      price: form.price || null,
+      acquisition_type: form.acquisition_type || null,
       total_copies: Math.max(1, parseInt(form.total_copies, 10) || 1),
     };
     if (showCategories && form.category_id) payload.category_id = parseInt(form.category_id, 10) || null;
@@ -189,6 +195,13 @@ export function Books({ features = {} }) {
             <label>{t('books.author')} <input value={form.author} onChange={(e) => setForm(prev => ({ ...prev, author: e.target.value }))} /></label>
             <label>{t('books.isbn')} <input value={form.isbn} onChange={(e) => setForm(prev => ({ ...prev, isbn: e.target.value }))} /></label>
             <label>{t('books.pubBarcode')} <input value={form.external_code} onChange={(e) => setForm(prev => ({ ...prev, external_code: e.target.value }))} placeholder={t('books.scanPubCode')} /></label>
+            <label>{t('books.publishedYear')} <input type="number" value={form.published_year} onChange={(e) => setForm(prev => ({ ...prev, published_year: e.target.value }))} placeholder="YYYY" /></label>
+            <label>{t('books.price')} <input type="number" step="0.01" value={form.price} onChange={(e) => setForm(prev => ({ ...prev, price: e.target.value }))} placeholder="0.00" /></label>
+            <label>{t('books.acquisitionType')} <select value={form.acquisition_type} onChange={(e) => setForm(prev => ({ ...prev, acquisition_type: e.target.value }))}>
+              <option value="">{t('books.none')}</option>
+              <option value="DONATION">{t('books.donation')}</option>
+              <option value="BOUGHT">{t('books.bought')}</option>
+            </select></label>
             {showCategories && (
               <label>{t('books.category')} <select value={form.category_id} onChange={(e) => setForm(prev => ({ ...prev, category_id: e.target.value }))}>
                 <option value="">{t('books.none')}</option>

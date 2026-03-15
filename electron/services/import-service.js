@@ -12,7 +12,7 @@ const { getDatabase } = require('../database/connection');
  * Generates the CSV template content for books.
  */
 function getTemplateContent() {
-    return 'title,author,isbn,category,total_copies,external_code\n"Sample Book","John Doe","9781234567890","Fiction",5,"EXT001"';
+    return 'title,author,isbn,published_year,price,acquisition_type,category,total_copies,external_code\n"Sample Book","John Doe","9781234567890",2024,1500.50,"BOUGHT","Fiction",5,"EXT001"';
 }
 
 /**
@@ -81,6 +81,7 @@ async function previewImport(filePath) {
                 if (rowData.isbn) rowData.isbn = rowData.isbn.toString().trim();
                 if (rowData.title) rowData.title = rowData.title.trim();
                 if (rowData.author) rowData.author = rowData.author.trim();
+                if (rowData.acquisition_type) rowData.acquisition_type = rowData.acquisition_type.trim().toUpperCase();
 
                 // Validation
                 if (!rowData.title) throw new Error('Title is required');
