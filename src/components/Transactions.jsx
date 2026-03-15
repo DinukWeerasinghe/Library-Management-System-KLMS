@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { friendlyIssueError } from '../utils/issueErrors';
 
 export function Transactions({ features = {} }) {
   const [members, setMembers] = useState([]);
@@ -47,7 +48,7 @@ export function Transactions({ features = {} }) {
       setIssueBookId('');
       load();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to issue' });
+      setMessage({ type: 'error', text: friendlyIssueError(err) });
     }
   };
 
@@ -59,13 +60,13 @@ export function Transactions({ features = {} }) {
       setMessage({ type: 'success', text: `Book returned.${fine}` });
       load();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to return' });
+      setMessage({ type: 'error', text: friendlyIssueError(err) });
     }
   };
 
   const handleRenew = async (issueId) => {
     if (!features.enable_renewal) {
-      setMessage({ type: 'error', text: 'Renewal is disabled in settings' });
+      setMessage({ type: 'error', text: 'Book renewal is currently disabled. Contact your administrator.' });
       return;
     }
     setMessage({ type: '', text: '' });
@@ -74,7 +75,7 @@ export function Transactions({ features = {} }) {
       setMessage({ type: 'success', text: 'Due date extended' });
       load();
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to renew' });
+      setMessage({ type: 'error', text: friendlyIssueError(err) });
     }
   };
 

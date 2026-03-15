@@ -28,15 +28,15 @@ export function Books({ features = {} }) {
     }
   }, [showCategories]);
 
-  const loadBooks = (filters = {}) => {
+  const loadBooks = (overrides = {}) => {
     setLoading(true);
     const searchParams = {
-      ...filters,
       page,
       pageSize,
-      categoryId: filters.categoryId || (showCategories && form.category_id ? form.category_id : undefined),
-      acquisitionType: filters.acquisitionType !== undefined ? filters.acquisitionType : filterAcquisitionType || undefined,
-      publishedYear: filters.publishedYear !== undefined ? filters.publishedYear : filterPublishedYear || undefined,
+      categoryId: showCategories && form.category_id ? form.category_id : undefined,
+      acquisitionType: filterAcquisitionType || undefined,
+      publishedYear: filterPublishedYear || undefined,
+      ...overrides,
     };
 
     // Determine if we should call search or getAll
@@ -53,7 +53,27 @@ export function Books({ features = {} }) {
 
   useEffect(() => {
     loadBooks();
-  }, [page, pageSize, filterAcquisitionType, filterPublishedYear]);
+  }, [page, pageSize]);
+
+  // Reset to page 1 and reload when filters change
+  useEffect(() => {
+    setPage(1);
+    setLoading(true);
+    const searchParams = {
+      page: 1,
+      pageSize,
+      acquisitionType: filterAcquisitionType || undefined,
+      publishedYear: filterPublishedYear || undefined,
+    };
+    const promise = searchQuery.trim()
+      ? window.klms.books.search(searchQuery, searchParams)
+      : window.klms.books.getAll(searchParams);
+    promise.then((res) => {
+      setList(res.items);
+      setTotal(res.total);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [filterAcquisitionType, filterPublishedYear]);
 
   useScanDetection({
     onScanDetected: (code) => {
@@ -163,7 +183,6 @@ export function Books({ features = {} }) {
       }
     } catch (err) {
       DialogService.showError('Failed to load barcode: ' + err.message);
-      DialogService.showError('Failed to load barcode');
     }
   };
 
@@ -198,7 +217,7 @@ export function Books({ features = {} }) {
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
-        <select value={filterAcquisitionType} onChange={(e) => { setFilterAcquisitionType(e.target.value); setPage(1); }}>
+        <select value={filterAcquisitionType} onChange={(e) => setFilterAcquisitionType(e.target.value)}>
           <option value="">{t('books.allAcquisitions')}</option>
           <option value="DONATION">{t('books.donation')}</option>
           <option value="BOUGHT">{t('books.bought')}</option>
@@ -367,6 +386,7 @@ export function Books({ features = {} }) {
         .btn-primary:hover { background: var(--color-primary-hover); }
         .toolbar { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
         .toolbar input { flex: 1; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); color: var(--color-text); }
+        .toolbar select { padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-surface); color: var(--color-text); }
         .toolbar button { padding: 0.5rem 1rem; background: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text); border-radius: var(--radius); }
         .toolbar button:hover { background: var(--color-surface-hover); }
         .form-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1rem; margin-bottom: 1rem; }

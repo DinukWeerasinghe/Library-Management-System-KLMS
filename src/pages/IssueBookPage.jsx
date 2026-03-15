@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
+import { friendlyIssueError } from '../utils/issueErrors';
 
 export function IssueBookPage({ features = {}, config = {} }) {
   const { t } = useTranslation();
@@ -71,11 +72,17 @@ export function IssueBookPage({ features = {}, config = {} }) {
     }
   };
 
-  const handleManualMemberChange = (id) => {
+  const handleManualMemberChange = async (id) => {
     setSelectedMemberId(id);
-    const member = members.find(m => m.id.toString() === id.toString());
-    setScannedMember(member || null);
-    if (member) setScanMemberCode(member.member_code || '');
+    if (!id) { setScannedMember(null); return; }
+    try {
+      const member = await window.klms.members.getById(parseInt(id, 10));
+      setScannedMember(member || null);
+      if (member) setScanMemberCode(member.member_code || '');
+    } catch {
+      const fallback = members.find(m => m.id.toString() === id.toString());
+      setScannedMember(fallback || null);
+    }
   };
 
   const handleScanBook = async (code, force = false) => {
@@ -131,7 +138,7 @@ export function IssueBookPage({ features = {}, config = {} }) {
 
       if (memberInputRef.current) memberInputRef.current.focus();
     } catch (err) {
-      DialogService.showError(err.message || 'Issuance failed');
+      DialogService.showError(friendlyIssueError(err));
     } finally {
       setSubmitting(false);
     }

@@ -3,6 +3,7 @@
  * Add, update, delete, search members. Member types: Student, Teacher.
  */
 const { getDatabase } = require('../database/connection');
+const fs = require('fs');
 const barcodeService = require('./barcode-service');
 const configRepository = require('../database/config-repository');
 const logger = require('../logger');
@@ -48,14 +49,28 @@ function generateMemberCode() {
 
 function getById(id) {
   const db = getDatabase();
-  return db.prepare('SELECT * FROM Member WHERE id = ?').get(id);
+  const member = db.prepare('SELECT * FROM Member WHERE id = ?').get(id);
+  if (!member) return null;
+  return enrichMember(db, member);
 }
 
 function getByCode(code) {
   if (!code) return null;
   const trimmed = String(code).trim();
   const db = getDatabase();
-  return db.prepare('SELECT * FROM Member WHERE member_code = ?').get(trimmed);
+  const member = db.prepare('SELECT * FROM Member WHERE member_code = ?').get(trimmed);
+  if (!member) return null;
+  return enrichMember(db, member);
+}
+
+function enrichMember(db, member) {
+  const countRow = db.prepare(
+    "SELECT COUNT(*) as c FROM Issue WHERE member_id = ? AND return_date IS NULL"
+  ).get(member.id);
+  const active_issues = (countRow && countRow.c) || 0;
+  const today = new Date().toISOString().split('T')[0];
+  const is_expired = member.expiry_date ? today > member.expiry_date : false;
+  return { ...member, active_issues, is_expired };
 }
 
 function findDuplicate(data) {

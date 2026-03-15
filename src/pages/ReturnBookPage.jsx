@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DialogService } from '../services/DialogService';
 import { useScanDetection } from '../hooks/useScanDetection';
+import { friendlyIssueError } from '../utils/issueErrors';
 
 export function ReturnBookPage({ features = {} }) {
   const { t } = useTranslation();
@@ -78,9 +79,7 @@ export function ReturnBookPage({ features = {} }) {
         loadIssued();
       }
     } catch (err) {
-      let msg = err.message || 'Scan failed';
-      if (msg.includes('Error: ')) msg = msg.split('Error: ').pop();
-      DialogService.showError(msg);
+      DialogService.showError(friendlyIssueError(err));
       setScanCode('');
     } finally {
       setScanning(false);
@@ -95,7 +94,7 @@ export function ReturnBookPage({ features = {} }) {
       setLastReturn(result);
       loadIssued();
     } catch (err) {
-      DialogService.showError(err.message || 'Return failed');
+      DialogService.showError(friendlyIssueError(err));
     } finally {
       setReturningId(null);
     }
@@ -108,7 +107,7 @@ export function ReturnBookPage({ features = {} }) {
       DialogService.showSuccess('Book renewed successfully');
       loadIssued();
     } catch (err) {
-      DialogService.showError(err.message || 'Renewal failed');
+      DialogService.showError(friendlyIssueError(err));
     } finally {
       setRenewingId(null);
     }
