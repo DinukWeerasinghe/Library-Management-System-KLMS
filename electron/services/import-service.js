@@ -146,15 +146,15 @@ async function previewImport(filePath) {
 /**
  * Executes the import based on preview results.
  * @param {Array} rows - The list of rows processed by previewImport
+ * @param {Electron.WebContents} [sender] - Optional webContents to stream progress events
  */
-async function executeImport(rows) {
+async function executeImport(rows, sender) {
     const stats = { success: 0, failed: 0, errors: [] };
 
     // Cache categories
     const allCategories = categoryService.getAll();
     const categoryMap = new Map(allCategories.map(c => [c.name.toLowerCase(), c.id]));
 
-    // 1. Create ImportBatch
     const { getDatabase, setBatchMode, persist } = require('../database/connection');
     const db = getDatabase();
     const batchResult = db.prepare('INSERT INTO ImportBatch (type, row_count) VALUES (?, ?)').run('BOOK', 0);
@@ -162,76 +162,71 @@ async function executeImport(rows) {
 
     logger.info(`Processing ${rows.length} rows for BOOK import batch #${batchId}`);
 
-    // Enable batch mode for bulk inserts
+    const actionableRows = rows.filter(r => r.status !== 'INVALID');
+    const total = actionableRows.length;
+    const CHUNK_SIZE = 100;
+
+    const sendProgress = (done) => {
+        if (sender && !sender.isDestroyed()) {
+            sender.send('import:progress', { done, total, type: 'book' });
+        }
+    };
+
     setBatchMode(true);
-
     try {
-        for (const row of rows) {
-            if (row.status === 'INVALID') {
-                logger.debug(`Skipping row ${row.id}: status is INVALID`);
-                continue;
-            }
+        let processed = 0;
 
-            try {
-                const data = row.data;
+        for (let i = 0; i < actionableRows.length; i += CHUNK_SIZE) {
+            const chunk = actionableRows.slice(i, i + CHUNK_SIZE);
 
-                if (row.status === 'MERGE') {
-                    logger.debug(`Merging book: ${data.title}, bookId: ${row.existingBook.id}`);
-                    // MERGE: Update existing book
-                    const bookId = row.existingBook.id;
-                    const newCopies = data.total_copies;
-
-                    // Update total and available copies
-                    db.prepare('UPDATE Book SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE id = ?')
-                        .run(newCopies, newCopies, bookId);
-
-                    stats.success++;
-                } else if (row.status === 'NEW') {
-                    logger.info(`Creating book: ${data.title}, batch_id: ${batchId}`);
-                    // NEW: Create book
-                    // Category Logic
-                    let categoryId = null;
-                    if (data.category) {
-                        const catName = data.category.trim();
-                        const lowerCat = catName.toLowerCase();
-                        if (categoryMap.has(lowerCat)) {
-                            categoryId = categoryMap.get(lowerCat);
-                        } else {
-                            const newCat = categoryService.create({ name: catName });
-                            if (newCat && newCat.id) {
-                                categoryId = newCat.id;
-                                categoryMap.set(lowerCat, categoryId);
+            for (const row of chunk) {
+                try {
+                    const data = row.data;
+                    if (row.status === 'MERGE') {
+                        db.prepare('UPDATE Book SET total_copies = total_copies + ?, available_copies = available_copies + ? WHERE id = ?')
+                            .run(data.total_copies, data.total_copies, row.existingBook.id);
+                        stats.success++;
+                    } else if (row.status === 'NEW') {
+                        let categoryId = null;
+                        if (data.category) {
+                            const lowerCat = data.category.trim().toLowerCase();
+                            if (categoryMap.has(lowerCat)) {
+                                categoryId = categoryMap.get(lowerCat);
+                            } else {
+                                const newCat = categoryService.create({ name: data.category.trim() });
+                                if (newCat && newCat.id) {
+                                    categoryId = newCat.id;
+                                    categoryMap.set(lowerCat, categoryId);
+                                }
                             }
                         }
+                        bookService.create({ ...data, category_id: categoryId, batch_id: batchId });
+                        stats.success++;
                     }
-
-                    bookService.create({
-                        ...data,
-                        category_id: categoryId,
-                        batch_id: batchId
-                    });
-                    stats.success++;
-                } else {
-                    logger.debug(`Unknown row status ${row.status} for row ${row.id}`);
+                } catch (err) {
+                    stats.failed++;
+                    stats.errors.push({ row: row.id, message: err.message });
+                    logger.error(`Import execution failed for row ${row.id}: ${err.message}`);
                 }
-            } catch (err) {
-                stats.failed++;
-                stats.errors.push({ row: row.id, message: err.message });
-                logger.error(`Import execution failed for row ${row.id}: ${err.message}`);
             }
+
+            processed += chunk.length;
+            sendProgress(processed);
+            // Yield event loop between chunks so IPC/UI stays responsive
+            await new Promise(resolve => setImmediate(resolve));
         }
 
-        // Final persistence after all rows
         persist();
-
+    } catch (err) {
+        logger.error(`Book import fatal error: ${err.message}`);
+        persist(); // save whatever succeeded
+        throw err;
     } finally {
-        // Always disable batch mode
         setBatchMode(false);
     }
 
-    // Update batch with final successful count
     db.prepare('UPDATE ImportBatch SET row_count = ? WHERE id = ?').run(stats.success, batchId);
-
+    sendProgress(total); // ensure 100%
     return stats;
 }
 

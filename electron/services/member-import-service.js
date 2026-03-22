@@ -5,7 +5,7 @@
 const fs = require('fs');
 const memberService = require('./member-service');
 const logger = require('../logger');
-const { getDatabase } = require('../database/connection');
+const { getDatabase, setBatchMode, persist } = require('../database/connection');
 
 /**
  * Generates the CSV template content for members.
@@ -121,37 +121,56 @@ async function previewImport(filePath) {
     return { rows, summary };
 }
 
-async function executeImport(rows) {
+async function executeImport(rows, sender) {
     const stats = { success: 0, failed: 0, errors: [] };
 
-    // 1. Create ImportBatch
     const db = getDatabase();
     const batchResult = db.prepare('INSERT INTO ImportBatch (type, row_count) VALUES (?, ?)').run('MEMBER', 0);
     const batchId = Number(batchResult.lastInsertRowid);
     logger.info(`Processing ${rows.length} rows for MEMBER import batch #${batchId}`);
-    for (const row of rows) {
-        if (row.status !== 'NEW') {
-            logger.debug(`Skipping row ${row.id}: status is ${row.status}`);
-            continue;
+
+    const actionableRows = rows.filter(r => r.status === 'NEW');
+    const total = actionableRows.length;
+    const CHUNK_SIZE = 100;
+
+    const sendProgress = (done) => {
+        if (sender && !sender.isDestroyed()) {
+            sender.send('import:progress', { done, total, type: 'member' });
+        }
+    };
+
+    try {
+        setBatchMode(true);
+        let processed = 0;
+
+        for (let i = 0; i < actionableRows.length; i += CHUNK_SIZE) {
+            const chunk = actionableRows.slice(i, i + CHUNK_SIZE);
+            for (const row of chunk) {
+                try {
+                    await memberService.create({ ...row.data, batch_id: batchId });
+                    stats.success++;
+                } catch (err) {
+                    stats.failed++;
+                    stats.errors.push({ row: row.id, message: err.message });
+                    logger.error(`Member Import failed for row ${row.id}: ${err.message}`);
+                }
+            }
+            processed += chunk.length;
+            sendProgress(Math.min(processed, total));
+            await new Promise(resolve => setImmediate(resolve));
         }
 
-        try {
-            logger.info(`Creating member: ${row.data.name}, batch_id: ${batchId}`);
-            await memberService.create({
-                ...row.data,
-                batch_id: batchId
-            });
-            stats.success++;
-        } catch (err) {
-            stats.failed++;
-            stats.errors.push({ row: row.id, message: err.message });
-            logger.error(`Member Import failed for row ${row.id}: ${err.message}`);
-        }
+        persist();
+    } catch (err) {
+        logger.error(`Member import fatal error: ${err.message}`);
+        persist(); // save whatever succeeded
+        throw err;
+    } finally {
+        setBatchMode(false);
     }
 
-    // Update batch with final successful count
     db.prepare('UPDATE ImportBatch SET row_count = ? WHERE id = ?').run(stats.success, batchId);
-
+    sendProgress(total);
     return stats;
 }
 

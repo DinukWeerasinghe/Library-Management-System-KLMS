@@ -100,7 +100,12 @@ contextBridge.exposeInMainWorld('klms', {
   },
   import: {
     getHistory: () => ipcRenderer.invoke('import:getHistory'),
-    rollback: (batchId) => ipcRenderer.invoke('import:rollback', batchId)
+    rollback: (batchId) => ipcRenderer.invoke('import:rollback', batchId),
+    onProgress: (callback) => {
+      const handler = (_, data) => callback(data);
+      ipcRenderer.on('import:progress', handler);
+      return () => ipcRenderer.removeListener('import:progress', handler);
+    }
   },
   app: {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),

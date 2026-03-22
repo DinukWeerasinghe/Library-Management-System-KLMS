@@ -289,9 +289,9 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('books:executeImport', async (_, rows) => {
+  ipcMain.handle('books:executeImport', async (event, rows) => {
     try {
-      const result = await importService.executeImport(rows);
+      const result = await importService.executeImport(rows, event.sender);
       return { success: true, result };
     } catch (err) {
       return { success: false, error: err.message };
@@ -333,9 +333,9 @@ function registerIpcHandlers() {
     }
   });
 
-  ipcMain.handle('members:executeImport', async (_, rows) => {
+  ipcMain.handle('members:executeImport', async (event, rows) => {
     try {
-      const result = await memberImportService.executeImport(rows);
+      const result = await memberImportService.executeImport(rows, event.sender);
       return { success: true, result };
     } catch (err) {
       return { success: false, error: err.message };
